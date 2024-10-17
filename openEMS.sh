@@ -8,4 +8,3 @@ openEMS_PATH=`dirname $0`
 
 #execute openEMS
 exec $openEMS_PATH/openEMS "$@"
-

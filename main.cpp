@@ -36,6 +36,8 @@
 
 using namespace std;
 
+// * ENTRY FUNCTION
+
 int main(int argc, char *argv[])
 {
 #ifdef MPI_SUPPORT
