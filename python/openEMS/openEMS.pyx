@@ -458,7 +458,7 @@ cdef class openEMS:
                     continue
                 grid.AddLine(n, hint[n])
 
-    def Run(self, sim_path, cleanup=False,setup_only=False, debug_material=False, debug_pec=False,
+    def Run(self, sim_path, cleanup=False, setup_only=False, debug_material=False, debug_pec=False,
             debug_operator=False, debug_boxes=False, debug_csx=False, verbose=None, **kw):
         """ Run(sim_path, cleanup=False, setup_only=False, verbose=None)
 

@@ -110,10 +110,11 @@ bool Operator_Ext_Excitation::BuildExtension()
 	Reset();
 	ContinuousStructure* CSX = m_Op->GetGeometryCSX();
 
+	//> Position array used for iteration over number of lines
 	unsigned int pos[3];
 	double amp=0;
 
-	vector<unsigned int> volt_vIndex[3];
+	vector<unsigned int> volt_vIndex[3]; //> [n_voltage_excitation_steps, 
 	vector<FDTD_FLOAT> volt_vExcit;
 	vector<unsigned int> volt_vDelay;
 	vector<unsigned int> volt_vDir;
@@ -136,11 +137,13 @@ bool Operator_Ext_Excitation::BuildExtension()
 	CSPropExcitation* elec=NULL;
 	CSProperties* prop=NULL;
 
+	//> Should be gridlines in x, y and z directions (e.g.: 21, 21, 41)
 	unsigned int numLines[] = {m_Op->GetNumberOfLines(0,true),m_Op->GetNumberOfLines(1,true),m_Op->GetNumberOfLines(2,true)};
 	for (pos[2]=0; pos[2]<numLines[2]; ++pos[2])
 	{
 		for (pos[1]=0; pos[1]<numLines[1]; ++pos[1])
 		{
+			//> Should show the primitive bounding box (e.g.: [-10, -10, 0], [10, 10, 0])
 			vector<CSPrimitives*> vPrims = m_Op->GetPrimitivesBoundBox(-1, pos[1], pos[2], CSProperties::EXCITATION);
 			for (pos[0]=0; pos[0]<numLines[0]; ++pos[0])
 			{
@@ -155,12 +158,19 @@ bool Operator_Ext_Excitation::BuildExtension()
 					if (m_CC_R0_included && (n==1) && (pos[0]==0))
 						continue;
 
+					
 					CSProperties* prop = CSX->GetPropertyByCoordPriority(volt_coord, vPrims, true);
+
+					cout << "\t: " << Curr_Count << "\t (" << Curr_Count_Dir[0] << ", " << Curr_Count_Dir[1] << ", " << Curr_Count_Dir[2] << ")" << endl;
+
+					//> If CSX->GetPropertyByCoordPriority is not NULL
 					if (prop)
 					{
 						elec = prop->ToExcitation();
 						if (elec==NULL)
 							continue;
+
+						//> 0 / 1 soft / hard electric field excitation
 						if ((elec->GetActiveDir(n)) && ( (elec->GetExcitType()==0) || (elec->GetExcitType()==1) ))//&& (pos[n]<numLines[n]-1))
 						{
 							amp = elec->GetWeightedExcitation(n,volt_coord)*m_Op->GetEdgeLength(n,pos);// delta[n]*gridDelta;
@@ -169,6 +179,8 @@ bool Operator_Ext_Excitation::BuildExtension()
 								volt_vExcit.push_back(amp);
 								volt_vDelay.push_back((unsigned int)(elec->GetDelay()/dT));
 								volt_vDir.push_back(n);
+
+								//> 
 								volt_vIndex[0].push_back(pos[0]);
 								volt_vIndex[1].push_back(pos[1]);
 								volt_vIndex[2].push_back(pos[2]);
@@ -252,12 +264,14 @@ bool Operator_Ext_Excitation::BuildExtension()
 						{
 							if ((elec->GetActiveDir(n)) && (pos[n]<numLines[n]-1) && ( (elec->GetExcitType()==0) || (elec->GetExcitType()==1) ))
 							{
+
 								amp = elec->GetWeightedExcitation(n,volt_coord)*m_Op->GetEdgeLength(n,pos);
 								if (amp!=0)
 								{
 									volt_vExcit.push_back(amp);
 									volt_vDelay.push_back((unsigned int)(elec->GetDelay()/dT));
 									volt_vDir.push_back(n);
+									//> This volt_vIndex[0] becomes 0 when the excitation is not in fact on the correct boundary
 									volt_vIndex[0].push_back(pos[0]);
 									volt_vIndex[1].push_back(pos[1]);
 									volt_vIndex[2].push_back(pos[2]);
@@ -275,10 +289,10 @@ bool Operator_Ext_Excitation::BuildExtension()
 		}
 	}
 
-	// set voltage excitations
+	//> set voltage excitations
 	setupVoltageExcitation( volt_vIndex, volt_vExcit, volt_vDelay, volt_vDir );
 
-	// set current excitations
+	//> set current excitations
 	setupCurrentExcitation( curr_vIndex, curr_vExcit, curr_vDelay, curr_vDir );
 
 	return true;
@@ -301,9 +315,10 @@ void Operator_Ext_Excitation::setupVoltageExcitation( vector<unsigned int> const
 	Volt_amp = new FDTD_FLOAT[Volt_Count];
 	Volt_dir = new unsigned short[Volt_Count];
 
-//	cerr << "Excitation::setupVoltageExcitation(): Number of voltage excitation points: " << Volt_Count << endl;
-//	if (Volt_Count==0)
-//		cerr << "No E-Field/voltage excitation found!" << endl;
+	cerr << "Excitation::setupVoltageExcitation(): Number of voltage excitation points: " << Volt_Count << endl;
+	if (Volt_Count==0)
+		cerr << "No E-Field/voltage excitation found!" << endl;
+
 	for (int n=0; n<3; n++)
 		for (unsigned int i=0; i<Volt_Count; i++)
 			Volt_index[n][i] = volt_vIndex[n].at(i);

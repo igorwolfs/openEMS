@@ -189,8 +189,8 @@ protected:
 	//! use New() for creating a new Operator
 	Operator();
 
-	virtual void Init();
 	void Delete();
+	virtual void Init();
 	virtual void Reset();
 	virtual void InitOperator();
 	virtual void InitDataStorage();

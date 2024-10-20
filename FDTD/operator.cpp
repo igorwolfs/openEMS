@@ -133,10 +133,20 @@ void Operator::Reset()
 	Operator_Base::Reset();
 }
 
+/**
+* @brief: 
+* @params:
+	- n: direction (x, y, z)
+	- pos: Current position for that direction in the "Lines" of the grid
+	- dualMesh: 
+*/
 double Operator::GetDiscLine(int n, unsigned int pos, bool dualMesh) const
 {
+	// If the direction is out of bounds
 	if ((n<0) || (n>2)) return 0.0;
+	// If the position in the grid is out of bounds
 	if (pos>=numLines[n]) return 0.0;
+	// 
 	if (dualMesh==false)
 		return discLines[n][pos];
 
@@ -156,7 +166,7 @@ double Operator::GetDiscDelta(int n, unsigned int pos, bool dualMesh) const
 	if (dualMesh==false)
 	{
 		if (pos<numLines[n]-1)
-			delta = GetDiscLine(n,pos+1,false) - GetDiscLine(n,pos,false);
+			delta = GetDiscLine(n, pos+1, false) - GetDiscLine(n, pos, false);
 		else
 			delta = GetDiscLine(n,pos,false) - GetDiscLine(n,pos-1,false);
 		return delta;
@@ -180,6 +190,7 @@ bool Operator::GetYeeCoords(int ny, unsigned int pos[3], double* coords, bool du
 	//check if position is inside the FDTD domain
 	if (dualMesh==false) //main grid
 	{
+		//> Single grid -> get coordinate in grid for that current position
 		if (pos[ny]>=numLines[ny]-1)
 			return false;
 	}
@@ -201,6 +212,7 @@ bool Operator::GetNodeCoords(const unsigned int pos[3], double* coords, bool dua
 	return true;
 }
 
+//> Get raw edge length (in m)
 double Operator::GetEdgeLength(int n, const unsigned int* pos, bool dualMesh) const
 {
 	return GetDiscDelta(n,pos[n],dualMesh)*gridDelta;

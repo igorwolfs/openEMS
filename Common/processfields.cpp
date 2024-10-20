@@ -38,6 +38,7 @@ ProcessFields::ProcessFields(Engine_Interface_Base* eng_if) : Processing(eng_if)
 
 	for (int n=0; n<3; ++n)
 	{
+		//> Assignin numlines
 		numLines[n]=0;
 		posLines[n]=NULL;
 		discLines[n]=NULL;
@@ -227,7 +228,8 @@ void ProcessFields::CalcMeshPos()
 			tmp_pos.clear();
 			for (unsigned int i=start[n]; i<=stop[n]; i+=subSample[n])
 				tmp_pos.push_back(i);
-
+			
+			//> Mesh calculation
 			numLines[n] = tmp_pos.size();
 			delete[] discLines[n];
 			discLines[n] = new double[numLines[n]];

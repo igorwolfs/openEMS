@@ -24,6 +24,7 @@
 
 using namespace std;
 
+//>: Excitation class
 Excitation::Excitation()
 {
 	Signal_volt = 0;
@@ -67,6 +68,7 @@ void Excitation::SetupSinusoidal(double f0)
 	m_Excit_Type = Excitation::Sinusoidal;
 	m_f0 = f0;
 	m_f_max = f0;
+	//> Signal period set in sinusoidal case
 	m_SignalPeriod = 1/f0;
 }
 
@@ -95,6 +97,7 @@ void Excitation::SetupCustomExcite(string str, double f0, double fmax)
 
 bool Excitation::buildExcitationSignal(unsigned int maxTS)
 {
+	//> main functino that does excitation signal building
 	if (dT<=0)
 	{
 		cerr << "Excitation::setupExcitation: Error, invalid timestep... " << endl;
@@ -107,6 +110,7 @@ bool Excitation::buildExcitationSignal(unsigned int maxTS)
 		CalcGaussianPulsExcitation(m_f0,m_fc,maxTS);
 		break;
 	case Excitation::Sinusoidal:
+		//> if (g_settings.GetVerboseLevel()>0)
 		CalcSinusExcitation(m_f0,maxTS);
 		break;
 	case Excitation::DiracPulse:
@@ -223,7 +227,7 @@ void Excitation::CalcCustomExcitation(double f0, int nTS, string signal)
 	if (nTS<=0) return;
 
 	Length = (unsigned int)(nTS);
-//	cerr << "Operator::CalcSinusExcitation: Length of the excite signal: " << ExciteLength << " timesteps" << endl;
+
 	delete[] Signal_volt;
 	delete[] Signal_curr;
 	Signal_volt = new FDTD_FLOAT[Length];
@@ -252,6 +256,12 @@ void Excitation::CalcCustomExcitation(double f0, int nTS, string signal)
 	SetNyquistNum( CalcNyquistNum(f0,dT) );
 }
 
+/**
+* @brief: Calculates the sinusoidal excitation
+* @param: 
+*	- f0: frequency of sinusoidal excitation
+*	- nTS: Number of time steps
+**/
 void Excitation::CalcSinusExcitation(double f0, int nTS)
 {
 	if (dT==0) return;
@@ -297,4 +307,3 @@ void Excitation::DumpCurrentExcite(string filename)
 		file << n*dT + 0.5*dT << "\t" << Signal_curr[n] << "\n";
 	file.close();
 }
-

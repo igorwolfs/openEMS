@@ -364,9 +364,10 @@ void openEMS::SetVerboseLevel(int level)
     g_settings.SetVerboseLevel(level);
 }
 
+//>: SetPrimitiveUsed
 bool openEMS::SetupProcessing()
 {
-	//*************** setup processing ************//
+	// *************** setup processing ************ //
 	if (g_settings.GetVerboseLevel()>0)
 		cout << "Setting up processing..." << endl;
 
@@ -376,6 +377,7 @@ bool openEMS::SetupProcessing()
 	double start[3];
 	double stop[3];
 	bool l_MultiBox = false;
+	//> Probebox property
 	vector<CSProperties*> Probes = m_CSX->GetPropertyByType(CSProperties::PROBEBOX);
 	for (size_t i=0; i<Probes.size(); ++i)
 	{
@@ -468,6 +470,8 @@ bool openEMS::SetupProcessing()
 		}
 	}
 
+
+	//>: SetPrimitiveUsed
 	vector<CSProperties*> DumpProps = m_CSX->GetPropertyByType(CSProperties::DUMPBOX);
 	for (size_t i=0; i<DumpProps.size(); ++i)
 	{
@@ -960,12 +964,13 @@ int openEMS::SetupFDTD()
 		return 3;
 	}
 
-	FDTD_Op->SetExcitationSignal(m_Exc);
-	FDTD_Op->AddExtension(new Operator_Ext_Excitation(FDTD_Op));
-	if (!CylinderCoords)
-		FDTD_Op->AddExtension(new Operator_Ext_TFSF(FDTD_Op));
 
-	if (FDTD_Op->SetGeometryCSX(m_CSX)==false)
+	FDTD_Op->SetExcitationSignal(m_Exc); //> simple setter
+	FDTD_Op->AddExtension(new Operator_Ext_Excitation(FDTD_Op)); //> External excitation added
+	if (!CylinderCoords)
+		FDTD_Op->AddExtension(new Operator_Ext_TFSF(FDTD_Op)); 
+
+	if (FDTD_Op->SetGeometryCSX(m_CSX)==false) //> Setting geometry
 	{
 		Signal::SetupHandlerForSIGINT(SIGNAL_ORIGINAL);
 		return(2);
@@ -1046,6 +1051,8 @@ int openEMS::SetupFDTD()
 
 	if (!m_Exc->buildExcitationSignal(NrTS))
 		exit(2);
+
+	//> Dumping excitation voltage and current excitation into an et and ht file
 	m_Exc->DumpVoltageExcite("et");
 	m_Exc->DumpCurrentExcite("ht");
 
@@ -1063,6 +1070,7 @@ int openEMS::SetupFDTD()
 	if (m_Exc->GetNyquistNum()>1000)
 		cerr << "openEMS::SetupFDTD: Warning, the timestep seems to be very small --> long simulation. Check your mesh!?" << endl;
 
+	//>: What does it mean that signal period is 0?
 	if (m_Exc->GetSignalPeriod()==0)
 	{
 		cout << "Excitation signal length is: " <<  m_Exc->GetLength() << " timesteps (" <<  m_Exc->GetLength()*FDTD_Op->GetTimestep() << "s)" << endl;

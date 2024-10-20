@@ -171,7 +171,10 @@ protected:
 	double m_BG_density;
 
 	CoordinateSystem m_MeshType;
+
+	//> Number of lines in x, y and z directions.
 	unsigned int numLines[3];
+	//> Number of gridlines, set in in SetupCSXGrid
 	double* discLines[3];
 	double gridDelta;
 };
