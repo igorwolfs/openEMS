@@ -139,6 +139,10 @@ bool Operator_Ext_Excitation::BuildExtension()
 
 	//> Should be gridlines in x, y and z directions (e.g.: 21, 21, 41)
 	unsigned int numLines[] = {m_Op->GetNumberOfLines(0,true),m_Op->GetNumberOfLines(1,true),m_Op->GetNumberOfLines(2,true)};
+	if (g_settings.GetVerboseLevel() > 3)
+	{
+		cout << "[operator_ext_excitation.cpp]: [numLines : {" << numLines[0] << ", " << numLines[1] << ", " << numLines[2] << "}" << endl;
+	}
 	for (pos[2]=0; pos[2]<numLines[2]; ++pos[2])
 	{
 		for (pos[1]=0; pos[1]<numLines[1]; ++pos[1])
@@ -158,8 +162,12 @@ bool Operator_Ext_Excitation::BuildExtension()
 					if (m_CC_R0_included && (n==1) && (pos[0]==0))
 						continue;
 
-					
 					CSProperties* prop = CSX->GetPropertyByCoordPriority(volt_coord, vPrims, true);
+					if (g_settings.GetVerboseLevel() > 3)
+					{
+						cout << "[operator_ext_excitation.cpp] [m_CC_R0_included:" << m_CC_R0_included << "], [volt_coord: {" << volt_coord[0] << ", " << volt_coord[1] << << ", " << volt_coord[2] << "}]" << endl;
+					}
+					
 
 					cout << "\t: " << Curr_Count << "\t (" << Curr_Count_Dir[0] << ", " << Curr_Count_Dir[1] << ", " << Curr_Count_Dir[2] << ")" << endl;
 
@@ -170,10 +178,21 @@ bool Operator_Ext_Excitation::BuildExtension()
 						if (elec==NULL)
 							continue;
 
+						if (g_settings.GetVerboseLevel() > 3)
+						{
+							cout << "[operator_ext_excitation.cpp]: [prop: " << prop << "], [Excitation:" << elec->GetExcitType() << "], ActiveDir [" << elec->GetActiveDir(n) << "]" << endl;
+						}
+
 						//> 0 / 1 soft / hard electric field excitation
 						if ((elec->GetActiveDir(n)) && ( (elec->GetExcitType()==0) || (elec->GetExcitType()==1) ))//&& (pos[n]<numLines[n]-1))
 						{
 							amp = elec->GetWeightedExcitation(n,volt_coord)*m_Op->GetEdgeLength(n,pos);// delta[n]*gridDelta;
+							if (g_settings.GetVerboseLevel() > 3)
+							{
+								cout << "[operator_ext_excitation.cpp]: [Excitation: " << amp << "], [GetWeightedExc:" << elec->GetWeightedExcitation(n,volt_coord) << "], GetEdgeLength [" << m_Op->GetEdgeLength(n,pos) << "]" << endl;
+							}
+
+
 							if (amp!=0)
 							{
 								volt_vExcit.push_back(amp);

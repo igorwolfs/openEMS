@@ -45,7 +45,7 @@ public:
 	void SetNativeFieldDumps(bool val) {m_nativeFieldDumps=val;}
 
 	//! Set the verbose level
-	void SetVerboseLevel(int level) {m_VerboseLevel=level;m_SavedVerboseLevel=level;}
+	void SetVerboseLevel(int level) {m_VerboseLevel=level; m_SavedVerboseLevel=level;}
 	//! Get the verbose level
 	int GetVerboseLevel() const {return m_VerboseLevel;}
 
