@@ -56,6 +56,8 @@ public:
 	unsigned int GetCurrCount(int ny) const {return Curr_Count_Dir[ny];}
 
 protected:
+	log4cxx::LoggerPtr Ext_Exc_logger;
+
 	Operator_Ext_Excitation(Operator* op, Operator_Ext_Excitation* op_ext);
 
 	Excitation* m_Exc;

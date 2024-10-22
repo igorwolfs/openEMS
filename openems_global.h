@@ -28,4 +28,16 @@
 #define OPENEMS_EXPORT
 #endif
 
+#include <log4cxx/logger.h>
+#include <log4cxx/propertyconfigurator.h>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/logmanager.h>
+#include <log4cxx/xml/domconfigurator.h>
+#include <log4cxx/layout.h>
+#include <fmt/core.h>
+
+using namespace log4cxx;
+using namespace log4cxx::helpers;
+
+
 #endif // OPENEMS_GLOBAL_H

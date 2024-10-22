@@ -177,6 +177,7 @@ protected:
 	//! Dump run statistivs to file
 	virtual bool InitRunStatistics(const std::string& filename);
 	virtual bool DumpRunStatistics(const std::string& filename, double time, unsigned int ts, double speed, double energy);
+	
 };
 
 #endif // OPENEMS_H

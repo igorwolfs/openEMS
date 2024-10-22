@@ -64,8 +64,13 @@ double CalcDiffTime(timeval t1, timeval t2)
 	return s_diff;
 }
 
+
+log4cxx::LoggerPtr openEMS_logger = log4cxx::Logger::getLogger("openEMS");
+
 openEMS::openEMS()
 {
+    log4cxx::PropertyConfigurator::configure("/home/igorwolfs/bin/openEMS-Project/openEMS/log4cxx.properties");
+
 	setlocale(LC_NUMERIC, "en_US.UTF-8");
 	FDTD_Op=NULL;
 	FDTD_Eng=NULL;
@@ -100,6 +105,7 @@ openEMS::openEMS()
 		m_PML_size[n] = 8;
 		m_Mur_v_ph[n] = 0;
 	}
+	LOG4CXX_INFO(openEMS_logger, "Initializing openEMS");
 }
 
 openEMS::~openEMS()
@@ -302,6 +308,8 @@ void openEMS::WelcomeScreen()
 
 bool openEMS::SetupBoundaryConditions()
 {
+	LOG4CXX_INFO(openEMS_logger, "SETTING UP BC");
+
 	FDTD_Op->SetBoundaryCondition(m_BC_type); //operator only knows about PEC and PMC, everything else is defined by extensions (see below)
 
 	/**************************** create all operator/engine extensions here !!!! **********************************/
@@ -330,6 +338,8 @@ bool openEMS::SetupBoundaryConditions()
 
 Engine_Interface_FDTD* openEMS::NewEngineInterface(int multigridlevel)
 {
+	LOG4CXX_INFO(openEMS_logger, "NewEngineInterface");
+
 	Operator_CylinderMultiGrid* op_cyl_mg = dynamic_cast<Operator_CylinderMultiGrid*>(FDTD_Op);
 	while (op_cyl_mg && multigridlevel>0)
 	{
@@ -367,6 +377,7 @@ void openEMS::SetVerboseLevel(int level)
 //>: SetPrimitiveUsed
 bool openEMS::SetupProcessing()
 {
+	LOG4CXX_INFO(openEMS_logger, "SetupProcessing");
 	// *************** setup processing ************ //
 	if (g_settings.GetVerboseLevel()>0)
 		cout << "Setting up processing..." << endl;
@@ -583,6 +594,7 @@ bool openEMS::SetupProcessing()
 
 bool openEMS::SetupMaterialStorages()
 {
+
 	vector<CSProperties*> DumpProps = m_CSX->GetPropertyByType(CSProperties::DUMPBOX);
 	for (size_t i=0; i<DumpProps.size(); ++i)
 	{
@@ -870,6 +882,7 @@ void openEMS::SetGaussExcite(double f0, double fc)
 
 void openEMS::SetSinusExcite(double f0)
 {
+	
 	this->InitExcitation();
 	m_Exc->SetupSinusoidal(f0);
 }

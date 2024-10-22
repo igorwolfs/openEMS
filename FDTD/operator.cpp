@@ -1777,6 +1777,7 @@ vector<CSPrimitives*> Operator::GetPrimitivesBoundBox(int posX, int posY, int po
 	int BBpos[3] = {posX, posY, posZ};
 	for (int n=0;n<3;++n)
 	{
+		// If smaller than 1: just take the entire mesh range
 		if (BBpos[n]<0)
 		{
 			boundBox[2*n]   = this->GetDiscLine(n,0);

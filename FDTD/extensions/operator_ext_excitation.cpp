@@ -23,6 +23,9 @@
 #include "CSPrimCurve.h"
 #include "CSPropExcitation.h"
 
+//> LOGGER
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Operator_Ext_Excitation::Operator_Ext_Excitation(Operator* op) : Operator_Extension(op)
 {
 	Init();
@@ -95,11 +98,14 @@ void Operator_Ext_Excitation::Reset()
 
 Operator_Ext_Excitation::Operator_Ext_Excitation(Operator* op, Operator_Ext_Excitation* op_ext) : Operator_Extension(op, op_ext)
 {
+    // log4cxx::PropertyConfigurator::configure("/home/igorwolfs/bin/openEMS-Project/openEMS/log4cxx.properties");
 	Init();
 }
 
 bool Operator_Ext_Excitation::BuildExtension()
 {
+	LOG4CXX_INFO_FMT(openEMS_logger, "\r\n****** START BuildExtension *******\r\n");
+
 	m_Exc = m_Op->GetExcitationSignal();
 	double dT = m_Op->GetTimestep();
 	if (dT==0)
@@ -139,19 +145,20 @@ bool Operator_Ext_Excitation::BuildExtension()
 
 	//> Should be gridlines in x, y and z directions (e.g.: 21, 21, 41)
 	unsigned int numLines[] = {m_Op->GetNumberOfLines(0,true),m_Op->GetNumberOfLines(1,true),m_Op->GetNumberOfLines(2,true)};
-	if (g_settings.GetVerboseLevel() > 3)
-	{
-		cout << "[operator_ext_excitation.cpp]: [numLines : {" << numLines[0] << ", " << numLines[1] << ", " << numLines[2] << "}" << endl;
-	}
+	LOG4CXX_INFO_FMT(openEMS_logger, "Number of Lines: {}, {}, {}\r\n", numLines[0], numLines[1], numLines[2]);
+
 	for (pos[2]=0; pos[2]<numLines[2]; ++pos[2])
 	{
 		for (pos[1]=0; pos[1]<numLines[1]; ++pos[1])
 		{
-			//> Should show the primitive bounding box (e.g.: [-10, -10, 0], [10, 10, 0])
+			//> Gets the primitive within the indicated bounding box (posX:-1, posY:pos[1], posZ:pos[2]) of type "Excitation" (e.g.: CSPrimBox with m_coords  [-10, -10, 0], [10, 10, 0])
+			//> -1: simply means the entire range for the x-axis
 			vector<CSPrimitives*> vPrims = m_Op->GetPrimitivesBoundBox(-1, pos[1], pos[2], CSProperties::EXCITATION);
 			for (pos[0]=0; pos[0]<numLines[0]; ++pos[0])
 			{
-				//electric field excite
+				// LOG4CXX_INFO(openEMS_logger, "position");
+				// electric field excite
+
 				for (int n=0; n<3; ++n)
 				{
 					if (m_Op->GetYeeCoords(n,pos,volt_coord,false)==false)
@@ -162,35 +169,28 @@ bool Operator_Ext_Excitation::BuildExtension()
 					if (m_CC_R0_included && (n==1) && (pos[0]==0))
 						continue;
 
+					//> 
 					CSProperties* prop = CSX->GetPropertyByCoordPriority(volt_coord, vPrims, true);
-					if (g_settings.GetVerboseLevel() > 3)
-					{
-						cout << "[operator_ext_excitation.cpp] [m_CC_R0_included:" << m_CC_R0_included << "], [volt_coord: {" << volt_coord[0] << ", " << volt_coord[1] << << ", " << volt_coord[2] << "}]" << endl;
-					}
-					
-
-					cout << "\t: " << Curr_Count << "\t (" << Curr_Count_Dir[0] << ", " << Curr_Count_Dir[1] << ", " << Curr_Count_Dir[2] << ")" << endl;
+					LOG4CXX_DEBUG_FMT(openEMS_logger, ".");
 
 					//> If CSX->GetPropertyByCoordPriority is not NULL
 					if (prop)
 					{
+						LOG4CXX_DEBUG_FMT(openEMS_logger, "-");
 						elec = prop->ToExcitation();
 						if (elec==NULL)
 							continue;
-
-						if (g_settings.GetVerboseLevel() > 3)
-						{
-							cout << "[operator_ext_excitation.cpp]: [prop: " << prop << "], [Excitation:" << elec->GetExcitType() << "], ActiveDir [" << elec->GetActiveDir(n) << "]" << endl;
-						}
-
+						LOG4CXX_DEBUG_FMT(openEMS_logger, ">");
 						//> 0 / 1 soft / hard electric field excitation
 						if ((elec->GetActiveDir(n)) && ( (elec->GetExcitType()==0) || (elec->GetExcitType()==1) ))//&& (pos[n]<numLines[n]-1))
 						{
 							amp = elec->GetWeightedExcitation(n,volt_coord)*m_Op->GetEdgeLength(n,pos);// delta[n]*gridDelta;
-							if (g_settings.GetVerboseLevel() > 3)
-							{
-								cout << "[operator_ext_excitation.cpp]: [Excitation: " << amp << "], [GetWeightedExc:" << elec->GetWeightedExcitation(n,volt_coord) << "], GetEdgeLength [" << m_Op->GetEdgeLength(n,pos) << "]" << endl;
-							}
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "*voltage* dir: {} {}", n, elec->GetExcitType());
+							LOG4CXX_DEBUG_FMT(openEMS_logger, " <<< ({},{},{}), ", pos[0], pos[1], pos[2]);
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "[Coords: ({:.2f},{:.2f},{:.2f})], ", volt_coord[0], volt_coord[1], volt_coord[2]);
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "[prop:{}, elec:{}, GetActiveDir:{}]", (void*)prop, (void*)elec, elec->GetActiveDir(n));
+
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "[amp:{:.3f}, GetWeightedExcitation:{:.3f}, GetEdgeLength:{:.3f}]", amp,  elec->GetWeightedExcitation(n, volt_coord), m_Op->GetEdgeLength(n,pos));
 
 
 							if (amp!=0)
@@ -209,6 +209,7 @@ bool Operator_Ext_Excitation::BuildExtension()
 								m_Op->SetVV(n,pos[0],pos[1],pos[2], 0 );
 								m_Op->SetVI(n,pos[0],pos[1],pos[2], 0 );
 							}
+							LOG4CXX_DEBUG_FMT(openEMS_logger, ">>>\n");
 						}
 					}
 				}
@@ -223,12 +224,23 @@ bool Operator_Ext_Excitation::BuildExtension()
 					CSProperties* prop = CSX->GetPropertyByCoordPriority(curr_coord, vPrims, true);
 					if (prop)
 					{
+						LOG4CXX_DEBUG_FMT(openEMS_logger, ".");
 						elec = prop->ToExcitation();
 						if (elec==NULL)
 							continue;
+						LOG4CXX_DEBUG_FMT(openEMS_logger, "-");
 						if ((elec->GetActiveDir(n)) && ( (elec->GetExcitType()==2) || (elec->GetExcitType()==3) ))
 						{
-							amp = elec->GetWeightedExcitation(n,curr_coord)*m_Op->GetEdgeLength(n,pos,true);// delta[n]*gridDelta;
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "*current* dir: {}, {}", n, elec->GetExcitType());
+							amp = elec->GetWeightedExcitation(n, curr_coord) * m_Op->GetEdgeLength(n, pos, true);// delta[n]*gridDelta;
+
+							LOG4CXX_DEBUG_FMT(openEMS_logger, " <<< ({},{},{}), ", pos[0], pos[1], pos[2]);
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "[Coords: ({:.2f},{:.2f},{:.2f})], ", curr_coord[0], curr_coord[1], curr_coord[2]);
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "[prop:{}, elec:{}, GetActiveDir:{}, ExciteType:{}]", (void*)prop, (void*)elec, elec->GetActiveDir(n), elec->GetExcitType());
+
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "[amp:{:.3f}, GetWeightedExcitation:{:.3f}, GetEdgeLength:{:.3f}]", amp,  elec->GetWeightedExcitation(n, curr_coord), m_Op->GetEdgeLength(n, pos, true));
+
+
 							if (amp!=0)
 							{
 								curr_vExcit.push_back(amp);
@@ -243,14 +255,14 @@ bool Operator_Ext_Excitation::BuildExtension()
 								m_Op->SetII(n,pos[0],pos[1],pos[2], 0 );
 								m_Op->SetIV(n,pos[0],pos[1],pos[2], 0 );
 							}
+							LOG4CXX_DEBUG_FMT(openEMS_logger, ">>>\n");
 						}
 					}
 				}
-
 			}
 		}
 	}
-
+	LOG4CXX_DEBUG_FMT(openEMS_logger, "\n");
 	//special treatment for primitives of type curve (treated as wires) see also Calc_PEC
 	double p1[3];
 	double p2[3];
@@ -284,7 +296,16 @@ bool Operator_Ext_Excitation::BuildExtension()
 							if ((elec->GetActiveDir(n)) && (pos[n]<numLines[n]-1) && ( (elec->GetExcitType()==0) || (elec->GetExcitType()==1) ))
 							{
 
+								LOG4CXX_DEBUG_FMT(openEMS_logger, "*wire-curve voltage* dir: {}, {}", n, elec->GetExcitType());
+								LOG4CXX_DEBUG_FMT(openEMS_logger, " <<< ({},{},{}), ", pos[0], pos[1], pos[2]);
+								LOG4CXX_DEBUG_FMT(openEMS_logger, "[Coords: ({:.2f},{:.2f},{:.2f})], ", volt_coord[0], volt_coord[1], volt_coord[2]);
+								LOG4CXX_DEBUG_FMT(openEMS_logger, "[prop:{}, elec:{}, GetActiveDir:{}, ExciteType:{}]", (void*)prop, (void*)elec, elec->GetActiveDir(n), elec->GetExcitType());
+
+
 								amp = elec->GetWeightedExcitation(n,volt_coord)*m_Op->GetEdgeLength(n,pos);
+								LOG4CXX_DEBUG_FMT(openEMS_logger, "[amp:{:.3f}, GetWeightedExcitation:{:.3f}, GetEdgeLength:{:.3f}]", amp,  elec->GetWeightedExcitation(n, curr_coord), m_Op->GetEdgeLength(n, pos, true));
+								
+
 								if (amp!=0)
 								{
 									volt_vExcit.push_back(amp);
@@ -300,6 +321,8 @@ bool Operator_Ext_Excitation::BuildExtension()
 									m_Op->SetVV(n,pos[0],pos[1],pos[2], 0 );
 									m_Op->SetVI(n,pos[0],pos[1],pos[2], 0 );
 								}
+
+								LOG4CXX_DEBUG_FMT(openEMS_logger, ">>>\n");
 							}
 						}
 					}
@@ -313,6 +336,8 @@ bool Operator_Ext_Excitation::BuildExtension()
 
 	//> set current excitations
 	setupCurrentExcitation( curr_vIndex, curr_vExcit, curr_vDelay, curr_vDir );
+	
+	LOG4CXX_INFO_FMT(openEMS_logger, "\r\n****** END BuildExtension *******\r\n");
 
 	return true;
 }
@@ -320,6 +345,10 @@ bool Operator_Ext_Excitation::BuildExtension()
 void Operator_Ext_Excitation::setupVoltageExcitation( vector<unsigned int> const volt_vIndex[3], vector<FDTD_FLOAT> const& volt_vExcit,
 		vector<unsigned int> const& volt_vDelay, vector<unsigned int> const& volt_vDir )
 {
+	LOG4CXX_INFO(openEMS_logger, "setupVoltageExcitation");
+	LOG4CXX_INFO_FMT(openEMS_logger, "volt_vIndex: ({}, {}, {}), voltage_vExc: ({})\r\n", volt_vIndex[0].size(), volt_vIndex[1].size(), volt_vIndex[2].size(), volt_vExcit.size());
+	
+	// volt_vIndex: positions of that Voltage excitation value
 	Volt_Count = volt_vIndex[0].size();
 	for (int n=0; n<3; n++)
 	{
@@ -348,11 +377,16 @@ void Operator_Ext_Excitation::setupVoltageExcitation( vector<unsigned int> const
 		Volt_dir[i]   = volt_vDir.at(i);
 		++Volt_Count_Dir[Volt_dir[i]];
 	}
+	LOG4CXX_INFO_FMT(openEMS_logger, "Volt_Count_Dir: ({}, {}, {})\r\n", Volt_Count_Dir[0], Volt_Count_Dir[1], Volt_Count_Dir[2]);
 }
 
 void Operator_Ext_Excitation::setupCurrentExcitation( vector<unsigned int> const curr_vIndex[3], vector<FDTD_FLOAT> const& curr_vExcit,
 		vector<unsigned int> const& curr_vDelay, vector<unsigned int> const& curr_vDir )
 {
+	LOG4CXX_INFO(openEMS_logger, "setupCurrentExcitation");
+	LOG4CXX_INFO_FMT(openEMS_logger, "curr_vIndex: ({}, {}, {}), curr_vExcit: ({})\r\n", curr_vIndex[0].size(), curr_vIndex[1].size(), curr_vIndex[2].size(), curr_vExcit.size());
+
+	// curr_vIndex: positions of that Current excitation value
 	Curr_Count = curr_vIndex[0].size();
 	for (int n=0; n<3; n++)
 	{
@@ -367,9 +401,7 @@ void Operator_Ext_Excitation::setupCurrentExcitation( vector<unsigned int> const
 	Curr_amp = new FDTD_FLOAT[Curr_Count];
 	Curr_dir = new unsigned short[Curr_Count];
 
-//	cerr << "Excitation::setupCurrentExcitation(): Number of current excitation points: " << Curr_Count << endl;
-//	if (Curr_Count==0)
-//		cerr << "No H-Field/current excitation found!" << endl;
+
 	for (int n=0; n<3; ++n)
 		for (unsigned int i=0; i<Curr_Count; i++)
 			Curr_index[n][i] = curr_vIndex[n].at(i);
@@ -380,6 +412,7 @@ void Operator_Ext_Excitation::setupCurrentExcitation( vector<unsigned int> const
 		Curr_dir[i]   = curr_vDir.at(i);
 		++Curr_Count_Dir[Curr_dir[i]];
 	}
+	LOG4CXX_INFO_FMT(openEMS_logger, "Curr_Count_Dir: ({}, {}, {}) \r\n", Curr_Count_Dir[0], Curr_Count_Dir[1], Curr_Count_Dir[2]);
 
 }
 
@@ -391,6 +424,7 @@ Engine_Extension* Operator_Ext_Excitation::CreateEngineExtention()
 void Operator_Ext_Excitation::ShowStat(ostream &ostr)  const
 {
 	Operator_Extension::ShowStat(ostr);
+	cout << "RANDOM PRINT" << endl;
 	cout << "Voltage excitations\t: " << Volt_Count    << "\t (" << Volt_Count_Dir[0] << ", " << Volt_Count_Dir[1] << ", " << Volt_Count_Dir[2] << ")" << endl;
 	cout << "Current excitations\t: " << Curr_Count << "\t (" << Curr_Count_Dir[0] << ", " << Curr_Count_Dir[1] << ", " << Curr_Count_Dir[2] << ")" << endl;
 	cout << "Excitation Length (TS)\t: " << m_Exc->GetLength() << endl;

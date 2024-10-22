@@ -25,20 +25,6 @@ ENDIF()
 
 set(VERSION "v0.0.36")
 
-# add git revision
-IF(EXISTS ${PROJECT_SOURCE_DIR}/.git )
-  FIND_PACKAGE(Git)
-  # Get the latest abbreviated commit hash of the working branch
-  execute_process(
-    COMMAND ${GIT_EXECUTABLE} describe --tags
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE GITREV
-  )
-  set(VERSION ${GITREV})
-  string(STRIP ${VERSION} VERSION)
-  message(STATUS "Found Git repository, ${PROJECT_NAME} version tag: ${VERSION}")
-ENDIF()
-
 ADD_DEFINITIONS(-DGIT_VERSION=\"${VERSION}\")
 
 #
@@ -104,6 +90,7 @@ find_path(CSXCAD_INCLUDE_DIR
 message(STATUS "CSXCAD_INCLUDE_DIR: ${CSXCAD_INCLUDE_DIR}" )
 INCLUDE_DIRECTORIES( ${CSXCAD_INCLUDE_DIR} ) 
 
+
 # TinyXML module from https://github.com/ros/cmake_modules
 find_package(TinyXML REQUIRED)
 ADD_DEFINITIONS( -DTIXML_USE_STL )
@@ -129,6 +116,12 @@ find_package(Boost 1.46 COMPONENTS
   chrono
   REQUIRED
 )
+
+find_package(fmt REQUIRED)
+
+find_package(log4cxx REQUIRED)
+INCLUDE_DIRECTORIES(${LOG4CXX_INCLUDE_DIR})
+
 message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
 INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
@@ -212,6 +205,8 @@ TARGET_LINK_LIBRARIES( openEMS
   ${Boost_LIBRARIES}
   ${vtk_LIBS}
   ${MPI_LIBRARIES}
+  log4cxx
+  fmt::fmt
 )
 
 if (WIN32)
