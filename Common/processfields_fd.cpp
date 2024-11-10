@@ -25,8 +25,12 @@
 
 using namespace std;
 
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
+
 ProcessFieldsFD::ProcessFieldsFD(Engine_Interface_Base* eng_if) : ProcessFields(eng_if)
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessFieldsFD::ProcessFieldsFD\r\n");
+
 }
 
 ProcessFieldsFD::~ProcessFieldsFD()
@@ -40,6 +44,7 @@ ProcessFieldsFD::~ProcessFieldsFD()
 
 void ProcessFieldsFD::InitProcess()
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessFieldsFD::InitProcess\r\n");
 	if (Enabled==false) return;
 
 	if (m_FD_Samples.size()==0)

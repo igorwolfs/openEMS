@@ -21,6 +21,10 @@ import numpy as np
 def DFT_time2freq( t, val, freq, signal_type='pulse'):
     assert len(t)==len(val)
     assert len(freq)>0
+    
+    '''
+    f_val: array of DFT results indexed per frequency
+    '''
     f_val = np.zeros(len(freq))*1j
     for n_f in range(len(freq)):
         f_val[n_f] = np.sum( val*np.exp( -1j*2*np.pi*freq[n_f] * t ) )
@@ -28,6 +32,9 @@ def DFT_time2freq( t, val, freq, signal_type='pulse'):
     if signal_type == 'pulse':
         f_val *= t[1]-t[0]
     elif signal_type == 'periodic':
+        '''
+        Fourier: S(f) = (1/N) * SUM(s(t) * exp(-2*pi*j*freq*t), t=0..N-1)
+        '''
         f_val /= len(t)
     else:
         raise Exception('Unknown signal type: "{}"'.format(signal_type))

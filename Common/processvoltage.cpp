@@ -19,8 +19,11 @@
 #include "FDTD/engine_interface_fdtd.h"
 #include <iomanip>
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 ProcessVoltage::ProcessVoltage(Engine_Interface_Base* eng_if) : ProcessIntegral(eng_if)
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessVoltage::ProcessVoltage\r\n");
 }
 
 ProcessVoltage::~ProcessVoltage()

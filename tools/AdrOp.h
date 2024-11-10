@@ -117,7 +117,9 @@ protected:
 	AdrOp *clCellAdr;
 	unsigned int uiDimension;
 	unsigned int uiSize;
+	// GRID MAX POSITIONS (i, j, k, l)
 	unsigned int uiImax,uiJmax,uiKmax,uiLmax;
+	// CURRENT POSITIONS in the grid (i, j, k, l)
 	unsigned int uiIpos, uiJpos, uiKpos, uiLpos;
 	double *dGrid[4];
 	double dDeltaUnit;

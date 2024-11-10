@@ -20,6 +20,9 @@
 #include "extensions/operator_extension.h"
 #include "tools/array_ops.h"
 
+
+extern log4cxx::LoggerPtr openEMS_logger;
+
 //! \brief construct an Engine instance
 //! it's the responsibility of the caller to free the returned pointer
 Engine* Engine::New(const Operator* op)
@@ -121,10 +124,18 @@ void Engine::UpdateVoltages(unsigned int startX, unsigned int numX)
 			for (pos[2]=0; pos[2]<numLines[2]; ++pos[2])
 			{
 				shift[2]=pos[2];
-				//do the updates here
-				//for x
+				/**
+					Op->vv: operator (1 - (sigma * dt) / (2 * mu)) / (1 + (sigma * dt) / (2 * mu))
+					Op->vi: operator (1 / (1 + (sigma * dt) / (2 * mu))
+
+					curr[Orientation of the applied magnetic field component (0, 1, 2)][Cell coordinate x][cell coordinate y][cell coordinate z]
+					volt[Orientation of the electric field component (0, 1, 2)][Cell coordinate x][cell coordinate y][cell coordinate z]
+				 */
+
+				// for x (9.18)
 				volt[0][pos[0]][pos[1]][pos[2]] *=
 				    Op->vv[0][pos[0]][pos[1]][pos[2]];
+
 				volt[0][pos[0]][pos[1]][pos[2]] +=
 				    Op->vi[0][pos[0]][pos[1]][pos[2]] * (
 				        curr[2][pos[0]][pos[1]         ][pos[2]         ] -
@@ -133,9 +144,10 @@ void Engine::UpdateVoltages(unsigned int startX, unsigned int numX)
 				        curr[1][pos[0]][pos[1]         ][pos[2]-shift[2]]
 				    );
 
-				//for y
+				// for y (9.19)
 				volt[1][pos[0]][pos[1]][pos[2]] *=
 				    Op->vv[1][pos[0]][pos[1]][pos[2]];
+
 				volt[1][pos[0]][pos[1]][pos[2]] +=
 				    Op->vi[1][pos[0]][pos[1]][pos[2]] * (
 				        curr[0][pos[0]         ][pos[1]][pos[2]         ] -
@@ -144,9 +156,10 @@ void Engine::UpdateVoltages(unsigned int startX, unsigned int numX)
 				        curr[2][pos[0]-shift[0]][pos[1]][pos[2]         ]
 				    );
 
-				//for z
+				// for z (9.20)
 				volt[2][pos[0]][pos[1]][pos[2]] *=
 				    Op->vv[2][pos[0]][pos[1]][pos[2]];
+
 				volt[2][pos[0]][pos[1]][pos[2]] +=
 				    Op->vi[2][pos[0]][pos[1]][pos[2]] * (
 				        curr[1][pos[0]         ][pos[1]         ][pos[2]] -
@@ -163,6 +176,7 @@ void Engine::UpdateVoltages(unsigned int startX, unsigned int numX)
 void Engine::UpdateCurrents(unsigned int startX, unsigned int numX)
 {
 	unsigned int pos[3];
+	// Iterate over all lines in x, y, z directions
 	pos[0] = startX;
 	for (unsigned int posX=0; posX<numX; ++posX)
 	{
@@ -170,10 +184,11 @@ void Engine::UpdateCurrents(unsigned int startX, unsigned int numX)
 		{
 			for (pos[2]=0; pos[2]<numLines[2]-1; ++pos[2])
 			{
-				//do the updates here
-				//for x
+				// do the updates here
+				// for x
 				curr[0][pos[0]][pos[1]][pos[2]] *=
 				    Op->ii[0][pos[0]][pos[1]][pos[2]];
+				
 				curr[0][pos[0]][pos[1]][pos[2]] +=
 				    Op->iv[0][pos[0]][pos[1]][pos[2]] * (
 				        volt[2][pos[0]][pos[1]  ][pos[2]  ] -
@@ -182,9 +197,10 @@ void Engine::UpdateCurrents(unsigned int startX, unsigned int numX)
 				        volt[1][pos[0]][pos[1]  ][pos[2]+1]
 				    );
 
-				//for y
+				// for y
 				curr[1][pos[0]][pos[1]][pos[2]] *=
 				    Op->ii[1][pos[0]][pos[1]][pos[2]];
+					
 				curr[1][pos[0]][pos[1]][pos[2]] +=
 				    Op->iv[1][pos[0]][pos[1]][pos[2]] * (
 				        volt[0][pos[0]  ][pos[1]][pos[2]  ] -
@@ -193,9 +209,10 @@ void Engine::UpdateCurrents(unsigned int startX, unsigned int numX)
 				        volt[2][pos[0]+1][pos[1]][pos[2]  ]
 				    );
 
-				//for z
+				// for z
 				curr[2][pos[0]][pos[1]][pos[2]] *=
 				    Op->ii[2][pos[0]][pos[1]][pos[2]];
+
 				curr[2][pos[0]][pos[1]][pos[2]] +=
 				    Op->iv[2][pos[0]][pos[1]][pos[2]] * (
 				        volt[1][pos[0]  ][pos[1]  ][pos[2]] -
@@ -228,7 +245,9 @@ void Engine::Apply2Voltages()
 {
 	//execute extensions in normal order -> highest priority gets access to the voltages first
 	for (size_t n=0; n<m_Eng_exts.size(); ++n)
+	{
 		m_Eng_exts.at(n)->Apply2Voltages();
+	}
 }
 
 void Engine::DoPreCurrentUpdates()
@@ -252,16 +271,26 @@ void Engine::Apply2Current()
 		m_Eng_exts.at(n)->Apply2Current();
 }
 
+
+// FDTD 3D https://eecs.wsu.edu/~schneidj/ufdtd/chap9.pdf
 bool Engine::IterateTS(unsigned int iterTS)
 {
+	LOG4CXX_DEBUG(openEMS_logger, "Engine::IterateTS");
 	for (unsigned int iter=0; iter<iterTS; ++iter)
 	{
+		//! ELECTRIC FIELD UPDATES
+
 		//voltage updates with extensions
+		// voltage updates with extensions
 		DoPreVoltageUpdates();
+		// propagate voltages into the grid
 		UpdateVoltages(0,numLines[0]);
+		// voltage updates with extensions
 		DoPostVoltageUpdates();
+		// Apply extension voltage changes? (Excitation hard -> replacing / soft -> adding)
 		Apply2Voltages();
 
+		//! MAGNETIC FIELD UPDATES
 		//current updates with extensions
 		DoPreCurrentUpdates();
 		UpdateCurrents(0,numLines[0]-1);
@@ -272,3 +301,19 @@ bool Engine::IterateTS(unsigned int iterTS)
 	}
 	return true;
 }
+
+
+
+/**
+//? How are the currents calculated?
+
+
+//? How are the voltages calculated?
+
+
+
+
+
+
+
+ */

@@ -17,8 +17,11 @@
 
 #include "engine_interface_fdtd.h"
 
+
+extern log4cxx::LoggerPtr openEMS_logger;
 Engine_Interface_FDTD::Engine_Interface_FDTD(Operator* op) : Engine_Interface_Base(op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Interface_FDTD::Engine_Interface_FDTD\r\n");
 	if (op==NULL)
 	{
 		cerr << "Engine_Interface_FDTD::Engine_Interface_FDTD: Error: Operator is not set! Exit!" << endl;
@@ -213,7 +216,6 @@ double Engine_Interface_FDTD::CalcVoltageIntegral(const unsigned int* start, con
 			unsigned int pos[3]={start[0],start[1],start[2]};
 			for (; pos[n]<stop[n]; ++pos[n])
 				result += m_Eng->GetVolt(n,pos[0],pos[1],pos[2]);
-
 		}
 		else
 		{

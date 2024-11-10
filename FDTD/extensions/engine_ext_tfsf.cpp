@@ -19,8 +19,14 @@
 #include "operator_ext_tfsf.h"
 #include "FDTD/engine_sse.h"
 
+
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
+
 Engine_Ext_TFSF::Engine_Ext_TFSF(Operator_Ext_TFSF* op_ext) : Engine_Extension(op_ext)
 {
+
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_TFSF::Engine_Ext_TFSF\r\n");
+
 	m_Op_TFSF = op_ext;
 	m_Priority = ENG_EXT_PRIO_TFSF;
 

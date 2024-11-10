@@ -23,8 +23,13 @@
 #include "tools/useful.h"
 #include "operator_ext_excitation.h"
 
+
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
+
 Engine_Ext_Mur_ABC::Engine_Ext_Mur_ABC(Operator_Ext_Mur_ABC* op_ext) : Engine_Extension(op_ext)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_Mur_ABC::Engine_Ext_Mur_ABC");
+
 	m_Op_mur = op_ext;
 	m_numLines[0] = m_Op_mur->m_numLines[0];
 	m_numLines[1] = m_Op_mur->m_numLines[1];
@@ -72,6 +77,9 @@ Engine_Ext_Mur_ABC::~Engine_Ext_Mur_ABC()
 
 void Engine_Ext_Mur_ABC::SetNumberOfThreads(int nrThread)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_Mur_ABC::SetNumberOfThreads\r\n");
+	LOG4CXX_INFO_FMT(openEMS_logger, "Threads: {}\r\n", nrThread);
+
 	Engine_Extension::SetNumberOfThreads(nrThread);
 
 	m_numX = AssignJobs2Threads(m_numLines[0],m_NrThreads,false);

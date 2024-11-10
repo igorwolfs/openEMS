@@ -17,9 +17,11 @@
 
 #include "engine_interface_base.h"
 #include "string"
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
 
 Engine_Interface_Base::Engine_Interface_Base(Operator_Base* base_op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Interface_Base::Engine_Interface_Base\r\n");
 	m_Op_Base = base_op;
 	m_InterpolType = NO_INTERPOLATION;
 }

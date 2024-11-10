@@ -20,12 +20,17 @@
 
 #include "FDTD/engine.h"
 
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
+
 Engine_Extension::Engine_Extension(Operator_Extension* op_ext)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Extension::Engine_Extension\r\n");
+	
 	m_Op_ext = op_ext;
 	m_Eng = NULL;
 	m_Priority = ENG_EXT_PRIO_DEFAULT;
 	m_NrThreads = 1;
+	LOG4CXX_INFO_FMT(openEMS_logger, "Extension name {}", GetExtensionName());
 }
 
 Engine_Extension::~Engine_Extension()
@@ -34,6 +39,7 @@ Engine_Extension::~Engine_Extension()
 
 void Engine_Extension::SetNumberOfThreads(int nrThread)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Extension::SetNumberOfThreads\r\n");
 	if (nrThread<1)
 		return;
 	m_NrThreads=nrThread;

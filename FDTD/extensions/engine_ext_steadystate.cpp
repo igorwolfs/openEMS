@@ -20,8 +20,12 @@
 #include "FDTD/engine_sse.h"
 #include "FDTD/engine_interface_fdtd.h"
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Engine_Ext_SteadyState::Engine_Ext_SteadyState(Operator_Ext_SteadyState* op_ext): Engine_Extension(op_ext)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_SteadyState::Engine_Ext_SteadyState\r\n");
+
 	m_Op_SS = op_ext;
 	m_Priority = ENG_EXT_PRIO_STEADYSTATE;
 

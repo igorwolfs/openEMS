@@ -18,9 +18,12 @@
 #include "FDTD/engine.h"
 #include "engine_ext_cylindermultigrid.h"
 #include "FDTD/engine_cylindermultigrid.h"
+extern log4cxx::LoggerPtr openEMS_logger;
 
 Engine_Ext_CylinderMultiGrid::Engine_Ext_CylinderMultiGrid(Operator_Extension* op_ext, bool isBase) : Engine_Extension(op_ext)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_CylinderMultiGrid::Engine_Ext_CylinderMultiGrid\r\n");
+
 	m_IsBase = isBase;
 	m_Eng_MG = NULL;
 

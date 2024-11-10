@@ -22,6 +22,19 @@
 #include "fparser.hh"
 #include "excitation.h"
 
+
+#include <log4cxx/logger.h>
+#include <log4cxx/propertyconfigurator.h>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/logmanager.h>
+#include <log4cxx/xml/domconfigurator.h>
+#include <log4cxx/layout.h>
+#include <fmt/core.h>
+
+using namespace log4cxx;
+using namespace log4cxx::helpers;
+extern log4cxx::LoggerPtr openEMS_logger;
+
 using namespace std;
 
 //>: Excitation class
@@ -97,7 +110,8 @@ void Excitation::SetupCustomExcite(string str, double f0, double fmax)
 
 bool Excitation::buildExcitationSignal(unsigned int maxTS)
 {
-	//> main functino that does excitation signal building
+	LOG4CXX_DEBUG(openEMS_logger, "BuildExcitationSignal >>>");
+	//> main function that does excitation signal building
 	if (dT<=0)
 	{
 		cerr << "Excitation::setupExcitation: Error, invalid timestep... " << endl;
@@ -107,19 +121,23 @@ bool Excitation::buildExcitationSignal(unsigned int maxTS)
 	switch (m_Excit_Type)
 	{
 	case Excitation::GaissianPulse:
+		LOG4CXX_DEBUG_FMT(openEMS_logger, " GaussianPuls {:.2f} {:.2f} {} ", m_f0, m_fc, maxTS);
 		CalcGaussianPulsExcitation(m_f0,m_fc,maxTS);
 		break;
 	case Excitation::Sinusoidal:
-		//> if (g_settings.GetVerboseLevel()>0)
+		LOG4CXX_DEBUG_FMT(openEMS_logger, " Sinusoidal {:.2f} {:} ", m_f0, maxTS);
 		CalcSinusExcitation(m_f0,maxTS);
 		break;
 	case Excitation::DiracPulse:
+		LOG4CXX_DEBUG(openEMS_logger, " DiracPulse ");
 		CalcDiracPulsExcitation();
 		break;
 	case Excitation::Step:
+		LOG4CXX_DEBUG(openEMS_logger, " Step ");
 		CalcStepExcitation();
 		break;
 	case Excitation::CustomExcite:
+		LOG4CXX_DEBUG_FMT(openEMS_logger, " CustomExcite {:.2f} {} ", m_f0, maxTS);
 		CalcCustomExcitation(m_f0,maxTS,m_CustomExc_Str);
 		break;
 	default:
@@ -128,12 +146,13 @@ bool Excitation::buildExcitationSignal(unsigned int maxTS)
 		return false;
 	}
 
+	LOG4CXX_DEBUG_FMT(openEMS_logger, "{}", GetNyquistNum());
 	if (GetNyquistNum() == 0)
 	{
 		cerr << "Excitation::buildExcitationSignal: Unknown error... excitation setup failed!!" << endl;
 		return false;
 	}
-
+	LOG4CXX_DEBUG(openEMS_logger, " BuildExcitationSignal <<<");
 	return true;
 }
 

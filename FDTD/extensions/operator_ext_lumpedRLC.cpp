@@ -30,8 +30,12 @@
 
 #define COPY_V2A(V,A) std::copy(V.begin(),V.end(),A)
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Operator_Ext_LumpedRLC::Operator_Ext_LumpedRLC(Operator* op) : Operator_Extension(op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator_Ext_LumpedRLC::Operator_Ext_LumpedRLC\r\n");
+
 	// Parallel circuit coefficients
 	v_RLC_ilv = NULL;
 	v_RLC_i2v = NULL;

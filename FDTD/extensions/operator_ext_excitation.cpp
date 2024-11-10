@@ -28,6 +28,7 @@ extern log4cxx::LoggerPtr openEMS_logger;
 
 Operator_Ext_Excitation::Operator_Ext_Excitation(Operator* op) : Operator_Extension(op)
 {
+	LOG4CXX_DEBUG(openEMS_logger, "Operator_Ext_Excitation::Operator_Ext_Excitation\r\n");
 	Init();
 }
 
@@ -169,43 +170,45 @@ bool Operator_Ext_Excitation::BuildExtension()
 					if (m_CC_R0_included && (n==1) && (pos[0]==0))
 						continue;
 
-					//> 
+					// Gets the properties connected to the bounding box 
 					CSProperties* prop = CSX->GetPropertyByCoordPriority(volt_coord, vPrims, true);
-					LOG4CXX_DEBUG_FMT(openEMS_logger, ".");
-
+					
 					//> If CSX->GetPropertyByCoordPriority is not NULL
 					if (prop)
 					{
-						LOG4CXX_DEBUG_FMT(openEMS_logger, "-");
 						elec = prop->ToExcitation();
 						if (elec==NULL)
 							continue;
-						LOG4CXX_DEBUG_FMT(openEMS_logger, ">");
 						//> 0 / 1 soft / hard electric field excitation
 						if ((elec->GetActiveDir(n)) && ( (elec->GetExcitType()==0) || (elec->GetExcitType()==1) ))//&& (pos[n]<numLines[n]-1))
 						{
-							amp = elec->GetWeightedExcitation(n,volt_coord)*m_Op->GetEdgeLength(n,pos);// delta[n]*gridDelta;
+							// Amplitude = Weighted excitation * edge-length (gets the edge-length starting from "pos", in direction "n")
+							//? Q: so amplitude is only dependent on weight (which is constant) and edge-length (which is constant)
+							amp = elec->GetWeightedExcitation(n,volt_coord)*m_Op->GetEdgeLength(n,pos); // delta[n]*gridDelta;
+							
 							LOG4CXX_DEBUG_FMT(openEMS_logger, "*voltage* dir: {} {}", n, elec->GetExcitType());
 							LOG4CXX_DEBUG_FMT(openEMS_logger, " <<< ({},{},{}), ", pos[0], pos[1], pos[2]);
 							LOG4CXX_DEBUG_FMT(openEMS_logger, "[Coords: ({:.2f},{:.2f},{:.2f})], ", volt_coord[0], volt_coord[1], volt_coord[2]);
-							LOG4CXX_DEBUG_FMT(openEMS_logger, "[prop:{}, elec:{}, GetActiveDir:{}]", (void*)prop, (void*)elec, elec->GetActiveDir(n));
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "[prop:{}, elec:{}, GetActiveDir:{}, ExciteType:{}]", (void*)prop, (void*)elec, elec->GetActiveDir(n), elec->GetExcitType());
+							LOG4CXX_DEBUG_FMT(openEMS_logger, "[amp:{:.8f}, GetWeightedExcitation:{:.3f}, GetEdgeLength:{:.3f}]", amp,  elec->GetWeightedExcitation(n, volt_coord), m_Op->GetEdgeLength(n,pos));
 
-							LOG4CXX_DEBUG_FMT(openEMS_logger, "[amp:{:.3f}, GetWeightedExcitation:{:.3f}, GetEdgeLength:{:.3f}]", amp,  elec->GetWeightedExcitation(n, volt_coord), m_Op->GetEdgeLength(n,pos));
-
-
+							// If added amplitude is nonzero.
+							//? Q: How is the amplitude calculated?
 							if (amp!=0)
 							{
+								LOG4CXX_DEBUG_FMT(openEMS_logger, ", amp, ");
 								volt_vExcit.push_back(amp);
 								volt_vDelay.push_back((unsigned int)(elec->GetDelay()/dT));
 								volt_vDir.push_back(n);
 
-								//> 
+								//>
 								volt_vIndex[0].push_back(pos[0]);
 								volt_vIndex[1].push_back(pos[1]);
 								volt_vIndex[2].push_back(pos[2]);
 							}
-							if (elec->GetExcitType()==1) //hard excite
+							if (elec->GetExcitType()==1) // hard excite
 							{
+								LOG4CXX_DEBUG_FMT(openEMS_logger, ", hard, ");
 								m_Op->SetVV(n,pos[0],pos[1],pos[2], 0 );
 								m_Op->SetVI(n,pos[0],pos[1],pos[2], 0 );
 							}
@@ -224,11 +227,9 @@ bool Operator_Ext_Excitation::BuildExtension()
 					CSProperties* prop = CSX->GetPropertyByCoordPriority(curr_coord, vPrims, true);
 					if (prop)
 					{
-						LOG4CXX_DEBUG_FMT(openEMS_logger, ".");
 						elec = prop->ToExcitation();
 						if (elec==NULL)
 							continue;
-						LOG4CXX_DEBUG_FMT(openEMS_logger, "-");
 						if ((elec->GetActiveDir(n)) && ( (elec->GetExcitType()==2) || (elec->GetExcitType()==3) ))
 						{
 							LOG4CXX_DEBUG_FMT(openEMS_logger, "*current* dir: {}, {}", n, elec->GetExcitType());
@@ -243,6 +244,7 @@ bool Operator_Ext_Excitation::BuildExtension()
 
 							if (amp!=0)
 							{
+								LOG4CXX_DEBUG_FMT(openEMS_logger, ", amp, ");
 								curr_vExcit.push_back(amp);
 								curr_vDelay.push_back((unsigned int)(elec->GetDelay()/dT));
 								curr_vDir.push_back(n);
@@ -252,6 +254,7 @@ bool Operator_Ext_Excitation::BuildExtension()
 							}
 							if (elec->GetExcitType()==3) //hard excite
 							{
+								LOG4CXX_DEBUG_FMT(openEMS_logger, ", hard, ");
 								m_Op->SetII(n,pos[0],pos[1],pos[2], 0 );
 								m_Op->SetIV(n,pos[0],pos[1],pos[2], 0 );
 							}
@@ -263,7 +266,7 @@ bool Operator_Ext_Excitation::BuildExtension()
 		}
 	}
 	LOG4CXX_DEBUG_FMT(openEMS_logger, "\n");
-	//special treatment for primitives of type curve (treated as wires) see also Calc_PEC
+	// special treatment for primitives of type curve (treated as wires) see also Calc_PEC
 	double p1[3];
 	double p2[3];
 	Grid_Path path;
@@ -308,6 +311,7 @@ bool Operator_Ext_Excitation::BuildExtension()
 
 								if (amp!=0)
 								{
+									LOG4CXX_DEBUG_FMT(openEMS_logger, ", amp, ");
 									volt_vExcit.push_back(amp);
 									volt_vDelay.push_back((unsigned int)(elec->GetDelay()/dT));
 									volt_vDir.push_back(n);
@@ -318,6 +322,7 @@ bool Operator_Ext_Excitation::BuildExtension()
 								}
 								if (elec->GetExcitType()==1) //hard excite
 								{
+									LOG4CXX_DEBUG_FMT(openEMS_logger, ", hard, ");
 									m_Op->SetVV(n,pos[0],pos[1],pos[2], 0 );
 									m_Op->SetVI(n,pos[0],pos[1],pos[2], 0 );
 								}
@@ -348,7 +353,8 @@ void Operator_Ext_Excitation::setupVoltageExcitation( vector<unsigned int> const
 	LOG4CXX_INFO(openEMS_logger, "setupVoltageExcitation");
 	LOG4CXX_INFO_FMT(openEMS_logger, "volt_vIndex: ({}, {}, {}), voltage_vExc: ({})\r\n", volt_vIndex[0].size(), volt_vIndex[1].size(), volt_vIndex[2].size(), volt_vExcit.size());
 	
-	// volt_vIndex: positions of that Voltage excitation value
+	// volt_vIndex: positions of that Voltage excitation value.
+	// volt_count: all positions where the voltage excitation needs to be applied.
 	Volt_Count = volt_vIndex[0].size();
 	for (int n=0; n<3; n++)
 	{
@@ -363,6 +369,7 @@ void Operator_Ext_Excitation::setupVoltageExcitation( vector<unsigned int> const
 	Volt_amp = new FDTD_FLOAT[Volt_Count];
 	Volt_dir = new unsigned short[Volt_Count];
 
+	LOG4CXX_INFO_FMT(openEMS_logger, "Number of voltage excitation points: {}", Volt_Count);
 	cerr << "Excitation::setupVoltageExcitation(): Number of voltage excitation points: " << Volt_Count << endl;
 	if (Volt_Count==0)
 		cerr << "No E-Field/voltage excitation found!" << endl;
@@ -372,8 +379,11 @@ void Operator_Ext_Excitation::setupVoltageExcitation( vector<unsigned int> const
 			Volt_index[n][i] = volt_vIndex[n].at(i);
 	for (unsigned int i=0; i<Volt_Count; i++)
 	{
+		// Set delay
 		Volt_delay[i] = volt_vDelay.at(i);
+		// Set amplitude
 		Volt_amp[i]   = volt_vExcit.at(i);
+		// Set direction
 		Volt_dir[i]   = volt_vDir.at(i);
 		++Volt_Count_Dir[Volt_dir[i]];
 	}

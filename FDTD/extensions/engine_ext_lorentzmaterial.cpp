@@ -19,8 +19,12 @@
 #include "operator_ext_lorentzmaterial.h"
 #include "FDTD/engine_sse.h"
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Engine_Ext_LorentzMaterial::Engine_Ext_LorentzMaterial(Operator_Ext_LorentzMaterial* op_ext_lorentz) : Engine_Ext_Dispersive(op_ext_lorentz)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_LorentzMaterial::Engine_Ext_LorentzMaterial\r\n");
+
 	m_Op_Ext_Lor = op_ext_lorentz;
 	m_Order = m_Op_Ext_Lor->GetDispersionOrder();
 	int order = m_Op_Ext_Lor->m_Order;

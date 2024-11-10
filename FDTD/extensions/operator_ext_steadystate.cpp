@@ -18,8 +18,13 @@
 #include "operator_ext_steadystate.h"
 #include "engine_ext_steadystate.h"
 
+
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Operator_Ext_SteadyState::Operator_Ext_SteadyState(Operator* op, double period): Operator_Extension(op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator_Ext_SteadyState::Operator_Ext_SteadyState\r\n");
+
 	this->Reset();
 	m_T_period = period;
 }

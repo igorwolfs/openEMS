@@ -37,6 +37,8 @@
 #include "CSPropMaterial.h"
 #include "CSPropLumpedElement.h"
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Operator* Operator::New()
 {
 	cout << "Create FDTD operator" << endl;
@@ -47,6 +49,8 @@ Operator* Operator::New()
 
 Operator::Operator() : Operator_Base()
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator::Operator\r\n");
+
 	m_Exc = 0;
 	m_InvaildTimestep = false;
 	m_TimeStepVar = 3;
@@ -133,13 +137,6 @@ void Operator::Reset()
 	Operator_Base::Reset();
 }
 
-/**
-* @brief: 
-* @params:
-	- n: direction (x, y, z)
-	- pos: Current position for that direction in the "Lines" of the grid
-	- dualMesh: 
-*/
 double Operator::GetDiscLine(int n, unsigned int pos, bool dualMesh) const
 {
 	// If the direction is out of bounds
@@ -181,6 +178,7 @@ double Operator::GetDiscDelta(int n, unsigned int pos, bool dualMesh) const
 	}
 }
 
+
 bool Operator::GetYeeCoords(int ny, unsigned int pos[3], double* coords, bool dualMesh) const
 {
 	for (int n=0;n<3;++n)
@@ -212,7 +210,6 @@ bool Operator::GetNodeCoords(const unsigned int pos[3], double* coords, bool dua
 	return true;
 }
 
-//> Get raw edge length (in m)
 double Operator::GetEdgeLength(int n, const unsigned int* pos, bool dualMesh) const
 {
 	return GetDiscDelta(n,pos[n],dualMesh)*gridDelta;
@@ -250,14 +247,17 @@ double Operator::GetNodeArea(int ny, const int pos[3], bool dualMesh) const
 
 	//call the unsigned int version of GetNodeArea
 	unsigned int uiPos[]={(unsigned int)pos[0],(unsigned int)pos[1],(unsigned int)pos[2]};
+	// Gets node-width from multiplying 2 sides forming the plane perpendicular to the passed direction normal n
 	return GetNodeArea(ny, uiPos, dualMesh);
 }
 
 unsigned int Operator::SnapToMeshLine(int ny, double coord, bool &inside, bool dualMesh, bool fullMesh) const
 {
 	inside = false;
+	// Invalid direction check
 	if ((ny<0) || (ny>2))
 		return 0;
+	// Invalid coord check
 	if (coord<GetDiscLine(ny,0))
 		return 0;
 	unsigned int numLines = GetNumberOfLines(ny, fullMesh);
@@ -274,10 +274,12 @@ unsigned int Operator::SnapToMeshLine(int ny, double coord, bool &inside, bool d
 	}
 	else
 	{
+		// Iterate over nodes in line
 		for (unsigned int n=1;n<numLines;++n)
 		{
+			// If the coordinate searched for < than the coordinate extracted from the node
 			if (coord<=GetDiscLine(ny,n,false))
-				return n-1;
+				return n-1; // Return the respective node-coordinate before the requested coordinate
 		}
 	}
 	//should not happen
@@ -391,6 +393,10 @@ int Operator::SnapLine2Mesh(const double* start, const double* stop, unsigned in
 	return ret;
 }
 
+
+/**
+
+*/
 Grid_Path Operator::FindPath(double start[], double stop[])
 {
 	Grid_Path path;
@@ -859,6 +865,7 @@ void Operator::InitOperator()
 	ii = Create_N_3DArray<FDTD_FLOAT>(numLines);
 }
 
+
 void Operator::InitDataStorage()
 {
 	if (m_StoreMaterial[0])
@@ -984,12 +991,16 @@ void Operator::Calc_ECOperatorPos(int n, unsigned int* pos)
 
 int Operator::CalcECOperator( DebugFlags debugFlags )
 {
+	LOG4CXX_DEBUG(openEMS_logger, ">>> CalcEOperator\r\n");
+	// Initialize computational elements
 	Init_EC();
-	InitDataStorage();
 
+	InitDataStorage();
+	
+	// Calculate all electric field parameters (mu, sigma, kappa, ..)
 	if (Calc_EC()==0)
 		return -1;
-
+	
 	m_InvaildTimestep = false;
 	opt_dT = 0;
 	if (dT>0)
@@ -1044,15 +1055,21 @@ int Operator::CalcECOperator( DebugFlags debugFlags )
 	for (int n=0; n<6; ++n)
 		if ((m_BC[n]==-1))
 			PEC[n] = false;
+
+	LOG4CXX_INFO_FMT(openEMS_logger, "Setup PEC Boundary Conditions ({}, {}, {}, {} {}, {}) \r\n", PEC[0], PEC[1], PEC[2], PEC[3], PEC[4], PEC[5]);
 	ApplyElectricBC(PEC);
 
+	
 	CalcPEC();
+
 
 	Calc_LumpedElements();
 
 	bool PMC[6];
 	for (int n=0; n<6; ++n)
 		PMC[n] = m_BC[n]==1;
+
+	LOG4CXX_INFO_FMT(openEMS_logger, "Setup PMC Boundary Conditions ({}, {}, {}, {} {}, {}) \r\n", PMC[0], PMC[1], PMC[2], PMC[3], PMC[4], PMC[5]);
 	ApplyMagneticBC(PMC);
 
 	//all information available for extension... create now...
@@ -1079,7 +1096,7 @@ int Operator::CalcECOperator( DebugFlags debugFlags )
 	if (debugFlags & debugPEC)
 		DumpPEC2File( "PEC_dump" );
 
-	//cleanup
+	// Cleanup
 	for (int n=0; n<3; ++n)
 	{
 		delete[] EC_C[n];
@@ -1091,7 +1108,7 @@ int Operator::CalcECOperator( DebugFlags debugFlags )
 		delete[] EC_R[n];
 		EC_R[n]=NULL;
 	}
-
+	LOG4CXX_DEBUG(openEMS_logger, "<<< CalcEOperator\r\n");
 	return 0;
 }
 
@@ -1188,6 +1205,7 @@ void Operator::ApplyMagneticBC(bool* dirs)
 bool Operator::Calc_ECPos(int ny, const unsigned int* pos, double* EC, vector<CSPrimitives*> vPrims) const
 {
 	double EffMat[4];
+	// Calculates eps, kappa, mu and sigma averaged over the cell
 	Calc_EffMatPos(ny,pos,EffMat, vPrims);
 
 	if (m_epsR)
@@ -1199,14 +1217,15 @@ bool Operator::Calc_ECPos(int ny, const unsigned int* pos, double* EC, vector<CS
 	if (m_sigma)
 		m_sigma[ny][pos[0]][pos[1]][pos[2]] =  EffMat[3];
 
+	// * Here by default double mesh is not requested because we're dealing with the electric field
 	double delta = GetEdgeLength(ny,pos);
+	// Gets area of node perpendicular to direction
 	double area  = GetEdgeArea(ny,pos);
 
 //	if (isnan(EffMat[0]))
 //	{
 //		cerr << ny << " " << pos[0] << " " << pos[1] << " " << pos[2] << " : " << EffMat[0] << endl;
 //	}
-
 	if (delta)
 	{
 		EC[0] = EffMat[0] * area/delta;
@@ -1218,7 +1237,9 @@ bool Operator::Calc_ECPos(int ny, const unsigned int* pos, double* EC, vector<CS
 		EC[1] = 0;
 	}
 
+	// * Here by default double mesh is not requested because we're dealing with the magnetic field
 	delta = GetEdgeLength(ny,pos,true);
+	// Gets area of node perpendicular to direction
 	area  = GetEdgeArea(ny,pos,true);
 
 	if (delta)
@@ -1252,10 +1273,13 @@ bool Operator::GetCellCenterMaterialAvgCoord(const int pos[], double coord[3]) c
 	unsigned int ui_pos[3];
 	for (int n=0;n<3;++n)
 	{
+		// Check if coordinates out of bounce
 		if ((pos[n]<0) || (pos[n]>=(int)numLines[n]))
 			return false;
+		// Set position
 		ui_pos[n] = pos[n];
 	}
+	// Get actual coordinates from discline
 	GetNodeCoords(ui_pos, coord, true);
 	return true;
 }
@@ -1263,13 +1287,6 @@ bool Operator::GetCellCenterMaterialAvgCoord(const int pos[], double coord[3]) c
 double Operator::GetMaterial(int ny, const double* coords, int MatType, vector<CSPrimitives*> vPrims, bool markAsUsed) const
 {
 	CSProperties* prop = CSX->GetPropertyByCoordPriority(coords,vPrims,markAsUsed);
-//	CSProperties* old_prop = CSX->GetPropertyByCoordPriority(coords,CSProperties::MATERIAL,markAsUsed);
-//	if (old_prop!=prop)
-//	{
-//		cerr << "ERROR: Unequal properties!" << endl;
-//		exit(-1);
-//	}
-
 	CSPropMaterial* mat = dynamic_cast<CSPropMaterial*>(prop);
 	if (mat)
 	{
@@ -1319,13 +1336,17 @@ bool Operator::AverageMatCellCenter(int ny, const unsigned int* pos, double* Eff
 	int loc_pos[3] = {(int)pos[0],(int)pos[1],(int)pos[2]};
 	double A_n;
 	double area = 0;
+	// Epsilon
 	EffMat[0] = 0;
+	// Kappa
 	EffMat[1] = 0;
+	// Mu
 	EffMat[2] = 0;
+	// Sigma
 	EffMat[3] = 0;
 
 	//******************************* epsilon,kappa averaging *****************************//
-	//shift up-right
+	//shift up-right, get coords
 	if (GetCellCenterMaterialAvgCoord(loc_pos,coord))
 	{
 		A_n = GetNodeArea(ny,loc_pos,true);
@@ -1334,7 +1355,7 @@ bool Operator::AverageMatCellCenter(int ny, const unsigned int* pos, double* Eff
 		area+=A_n;
 	}
 
-	//shift up-left
+	//shift up-left, get coords
 	--loc_pos[nP];
 	if (GetCellCenterMaterialAvgCoord(loc_pos,coord))
 	{
@@ -1344,7 +1365,7 @@ bool Operator::AverageMatCellCenter(int ny, const unsigned int* pos, double* Eff
 		area+=A_n;
 	}
 
-	//shift down-right
+	//shift down-right, get coords
 	++loc_pos[nP];
 	--loc_pos[nPP];
 	if (GetCellCenterMaterialAvgCoord(loc_pos,coord))
@@ -1355,7 +1376,7 @@ bool Operator::AverageMatCellCenter(int ny, const unsigned int* pos, double* Eff
 		area+=A_n;
 	}
 
-	//shift down-left
+	//shift down-left, get coords
 	--loc_pos[nP];
 	if (GetCellCenterMaterialAvgCoord(loc_pos,coord))
 	{
@@ -1365,7 +1386,9 @@ bool Operator::AverageMatCellCenter(int ny, const unsigned int* pos, double* Eff
 		area+=A_n;
 	}
 
+	// Average epsilon over the area
 	EffMat[0]*=__EPS0__/area;
+	// Average Kappa over the area -> Electric conductivity (Kappa = 1/rho = sigma -> inverse of resistivity)
 	EffMat[1]/=area;
 
 	//******************************* mu,sigma averaging *****************************//
@@ -1403,6 +1426,7 @@ bool Operator::AverageMatCellCenter(int ny, const unsigned int* pos, double* Eff
 	}
 
 	EffMat[2] = length * __MUE0__ / EffMat[2];
+	// Magnetic conductivity (sigma) -> (Indicating lossy magnetic flow in non-ideal magnetic materials)
 	if (EffMat[3]) EffMat[3]=length / EffMat[3];
 
 	for (int n=0; n<4; ++n)
@@ -1546,6 +1570,7 @@ bool Operator::Calc_EffMatPos(int ny, const unsigned int* pos, double* EffMat, v
 
 bool Operator::Calc_LumpedElements()
 {
+	LOG4CXX_DEBUG(openEMS_logger, "Calc_LumpedElements >>>\r\n");
 	vector<CSProperties*> props = CSX->GetPropertyByType(CSProperties::LUMPED_ELEMENT);
 
 	for (size_t i=0;i<props.size();++i)
@@ -1554,7 +1579,10 @@ bool Operator::Calc_LumpedElements()
 		CSPropLumpedElement* PLE = dynamic_cast<CSPropLumpedElement*>(props.at(i));
 
 		if (PLE==NULL)
+		{
+			LOG4CXX_DEBUG(openEMS_logger, "Calc_LumpedElements (ret: false???!) <<<\r\n");
 			return false; //sanity check: this should never happen!
+		}
 
 		vector<CSPrimitives*> prims = PLE->GetAllPrimitives();
 		for (size_t bn=0;bn<prims.size();++bn)
@@ -1720,6 +1748,7 @@ bool Operator::Calc_LumpedElements()
 						<< prims.at(bn)->GetTypeName() << " ID: " << prims.at(bn)->GetID() << " @ Property: " << PLE->GetName() << endl;
 		}
 	}
+	LOG4CXX_DEBUG(openEMS_logger, "Calc_LumpedElements (ret: true) <<<\r\n");
 	return true;
 }
 
@@ -1766,7 +1795,9 @@ bool Operator::Calc_EC()
 		return false;
 	}
 	
+	// Set positions in the main grid as 0
 	MainOp->SetPos(0,0,0);
+	// Calculate all electric field parameters
 	Calc_EC_Range(0,numLines[0]-1);
 	return true;
 }
@@ -1804,16 +1835,22 @@ void Operator::Calc_EC_Range(unsigned int xStart, unsigned int xStop)
 	{
 		for (pos[1]=0; pos[1]<numLines[1]; ++pos[1])
 		{
+			// Get primitives inside the (x, y) bounding-box for ALL z (z=-1 -> all Z)
 			vector<CSPrimitives*> vPrims = this->GetPrimitivesBoundBox(pos[0], pos[1], -1, CSProperties::MATERIAL);
 			for (pos[2]=0; pos[2]<numLines[2]; ++pos[2])
 			{
+				// MainOp: AdrOp -> Gets 1-dimensional position
 				ipos = MainOp->GetPos(pos[0],pos[1],pos[2]);
 				for (int n=0; n<3; ++n)
 				{
 					Calc_ECPos(n,pos,inEC,vPrims);
+					// Epsilon
 					EC_C[n][ipos]=inEC[0];
+					// Kappa
 					EC_G[n][ipos]=inEC[1];
+					// Mu
 					EC_L[n][ipos]=inEC[2];
+					// Sigma
 					EC_R[n][ipos]=inEC[3];
 				}
 			}
@@ -1985,6 +2022,7 @@ double Operator::CalcTimestep_Var3()
 
 bool Operator::CalcPEC()
 {
+	LOG4CXX_DEBUG(openEMS_logger, ">>> CalcPEC\r\n");
 	m_Nr_PEC[0]=0;
 	m_Nr_PEC[1]=0;
 	m_Nr_PEC[2]=0;
@@ -1993,6 +2031,7 @@ bool Operator::CalcPEC()
 
 	CalcPEC_Curves();
 
+	LOG4CXX_DEBUG(openEMS_logger, "<<< CalcPEC\r\n");
 	return true;
 }
 

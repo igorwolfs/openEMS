@@ -38,3 +38,13 @@ protected:
 };
 
 #endif // ENGINE_EXT_EXCITATION_H
+
+/**
+Difference between operator extension and engine extension
+// * Engine Extension
+Engine extension is added to the engine as an object to be called every timestep 
+// * Operator Extension
+Operator extension is used to set up the voltage and current excitations beforehand
+They are used by the engine extension to 
+- initialize the voltage / current excitation with delay, frequency, type, direction
+*/

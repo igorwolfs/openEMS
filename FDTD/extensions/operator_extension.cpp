@@ -20,9 +20,12 @@
 #include "FDTD/operator_cylinder.h"
 
 using namespace std;
+extern log4cxx::LoggerPtr openEMS_logger;
 
 Operator_Extension::Operator_Extension(Operator* op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator_Extension::Operator_Extension\r\n");
+
 	m_Op = op;
 	m_Active = true;
 

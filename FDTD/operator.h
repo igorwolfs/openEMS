@@ -23,6 +23,14 @@
 #include "excitation.h"
 #include "Common/operator_base.h"
 
+#include <log4cxx/logger.h>
+#include <log4cxx/propertyconfigurator.h>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/logmanager.h>
+#include <log4cxx/xml/domconfigurator.h>
+#include <log4cxx/layout.h>
+#include <fmt/core.h>
+
 class Operator_Extension;
 class Operator_Ext_Excitation;
 class Engine;
@@ -89,6 +97,12 @@ public:
 	bool GetTimestepValid() const {return !m_InvaildTimestep;}
 
 	//! Choose a time step method (0=auto, 1=CFL, 3=Rennings)
+	/**
+	@brief: Choose a time step method (0=auto, 1=CFL, 3=Rennings)
+	@params:
+		- CFL: Stability criterion based on courant number
+		- RENNING: Limiting time-step based on natural frequencies of structural elements.
+	**/
 	void SetTimeStepMethod(int var) {m_TimeStepVar=var;}
 
 	//! Set the material averaging method /sa MatAverageMethods
@@ -111,7 +125,11 @@ public:
 
 	virtual double GetGridDelta() const {return gridDelta;}
 
-	//! Get the disc line in \a n direction (in drawing units)
+	/*!
+	  \param[in] n direction.
+	  \param[in] pos: mesh coordinate in that direction.
+	  \return Returns the coordinate for that direction and that index in the discline
+	  */
 	virtual double GetDiscLine(int n, unsigned int pos, bool dualMesh=false) const;
 
 	//! Get the disc line delta in \a n direction (in drawing units)
@@ -132,10 +150,17 @@ public:
 	//! Get the node area for a given direction \a n and a given mesh position \a pos
 	virtual double GetNodeArea(int ny, const int pos[3], bool dualMesh = false) const;
 
-	//! Get the length of an FDTD edge (unit is meter).
+	/*!
+	  \param[in] ny: direction.
+	  \param[in] pos: mesh coordinate in that direction.
+	  \return Get distance from "pos" to the next edge (or previous if its the last one) on the discline
+	  */
 	virtual double GetEdgeLength(int ny, const unsigned int pos[3], bool dualMesh = false) const;
 
-	//! Get the volume of an FDTD cell
+	/*!
+	  \param[in] pos: mesh coordinates
+	  \return Get volume (in m3) of the cell 
+	  */
 	virtual double GetCellVolume(const unsigned int pos[3], bool dualMesh = false) const;
 
 	//! Get the area around an edge for a given direction \a n and a given mesh position \a pos
@@ -144,6 +169,13 @@ public:
 		In a cartesian mesh this is equal to the NodeArea, may be different in other coordinate systems.
 	*/
 	virtual double GetEdgeArea(int ny, const unsigned int pos[3], bool dualMesh = false) const {return GetNodeArea(ny,pos,dualMesh);}
+	
+	/*!
+	  \param[in] ny direction.
+	  \param[in] coord: mesh coordinate in that direction.
+	  \param[out] inside boolean verifying validity of requested coordinate.
+	  \return returns n, the closest respective index to that coordinate for that discline
+	  */
 
 	virtual unsigned int SnapToMeshLine(int ny, double coord, bool &inside, bool dualMesh=false, bool fullMesh=false) const;
 
@@ -153,12 +185,11 @@ public:
 	//! Snap a given box to the FDTD mesh
 	virtual int SnapBox2Mesh(const double* start, const double* stop, unsigned int* uiStart, unsigned int* uiStop, bool dualMesh=false, bool fullMesh=false, int SnapMethod=0, bool* bStartIn=NULL, bool* bStopIn=NULL) const;
 
-	//! Snap a given line to the operator mesh
 	/*!
-	  \param[in] start coorindate of the line
-	  \param[in] stop coorindate of the line
-	  \param[out] uiStart the snapped line-start coorindate index
-	  \param[out] uiStop the snapped line-stop coorindate index
+	  \param[in] start coordinate of the line
+	  \param[in] stop coordinate of the line
+	  \param[out] uiStart the snapped line-start coordinate index
+	  \param[out] uiStop the snapped line-stop coordinate index
 	  \param[in] dualMesh snap to main or dual mesh (default is main mesh)
 	  \return returns a status, 0 = success, 1 = start outside, 2 = stop outside, 3 = both outside
 	  */
@@ -174,6 +205,11 @@ public:
 	virtual double GetDiscMaterial(int type, int ny, const unsigned int pos[3]) const;
 
 	//! Get the cell center coordinate usable for material averaging (Warning, may not be the yee cell center)
+	/*!
+	  \param[in] pos coordinate of the line
+	  \param[out] coord the snapped line-start coordinate index
+	  \return returns true if within bounds and coordinates gotten successfully
+	  */
 	virtual bool GetCellCenterMaterialAvgCoord(const int pos[3], double coord[3]) const;
 
 	virtual void SetExcitationSignal(Excitation* exc);
@@ -221,6 +257,13 @@ protected:
 	double CalcTimestep_Var3();
 
 	//! Calculate the FDTD equivalent circuit parameter for the given position and direction ny. \sa Calc_EffMat_Pos
+	/*!
+	  \param[in] ny line direction
+	  \param[in] pos node positions
+	  \param[out] EC Epsilon, Kappa, Mu, Sigma calculations averaged for those coordinates
+	  \param[in] vPrims the snapped line-stop coordinate index
+	  \return returns true
+	  */
 	virtual bool Calc_ECPos(int ny, const unsigned int* pos, double* EC, vector<CSPrimitives *> vPrims) const;
 
 	//! Get the FDTD raw disc delta, needed by Calc_EffMatPos() \sa Calc_EffMatPos
@@ -232,13 +275,35 @@ protected:
 	virtual double GetRawDiscDelta(int ny, const int pos) const;
 
 	//! Get the material at a given coordinate, direction and type from CSX (internal use only)
+		/*!
+	  \param[in] ny direction (for weight purposes)
+	  \param[in] coords coordinate positions for material acquisition
+	  \param[in] MatType Material-type (0: epsilon, 1: kapp, 2: mu, 3: sigma, 4: density)
+	  \param[in] vPrims the snapped line-stop coordinate index
+	  \param[in] markAsUsed the snapped line-stop coordinate index
+	  \return returns the relevant value for (0: epsilon, 1: kapp, 2: mu, 3: sigma, 4: density)
+	  */
 	virtual double GetMaterial(int ny, const double coords[3], int MatType, vector<CSPrimitives*> vPrims, bool markAsUsed=true) const;
 
 	MatAverageMethods m_MatAverageMethod;
 
 	//! Calculate the effective/averaged material properties at the given position and direction ny.
+	/*!
+	  \param[in] ny line direction 
+	  \param[in] pos node positions
+	  \param[out] EffMat the snapped line-start coordinate index
+	  \param[in] vPrims the snapped line-stop coordinate index
+	  \return returns true
+	  */
 	virtual bool Calc_EffMatPos(int ny, const unsigned int* pos, double* EffMat, vector<CSPrimitives*> vPrims) const;
 
+	/*!
+	  \param[in] ny line direction 
+	  \param[in] pos node positions
+	  \param[out] EffMat the snapped line-start coordinate index
+	  \param[in] vPrims the snapped line-stop coordinate index
+	  \return returns true
+	  */
 	virtual bool AverageMatCellCenter(int ny, const unsigned int* pos, double* EffMat, vector<CSPrimitives*> vPrims) const;
 	virtual bool AverageMatQuarterCell(int ny, const unsigned int* pos, double* EffMat, vector<CSPrimitives*> vPrims) const;
 
@@ -263,7 +328,14 @@ protected:
 	//EC elements, internal only!
 	virtual void Init_EC();
 	virtual bool Calc_EC();
+	
+	/*!
+	  \brief: Filles the simulation material grid with 
+	  \param[in] xStart line-start (x-direction)
+	  \param[in] xStop line-stop (x-direction)
+	  */
 	virtual void Calc_EC_Range(unsigned int xStart, unsigned int xStop);
+	
 	FDTD_FLOAT* EC_C[3];
 	FDTD_FLOAT* EC_G[3];
 	FDTD_FLOAT* EC_L[3];
@@ -281,7 +353,7 @@ protected:
 
 	// engine/post-proc needs access
 public:
-	//EC operator
+	//EC operator [direction][x][y][z]
 	FDTD_FLOAT**** vv; //calc new voltage from old voltage
 	FDTD_FLOAT**** vi; //calc new voltage from old current
 	FDTD_FLOAT**** ii; //calc new current from old current

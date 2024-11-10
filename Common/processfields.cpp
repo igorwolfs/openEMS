@@ -22,8 +22,12 @@
 #include "processfields.h"
 #include "FDTD/engine_interface_fdtd.h"
 
+
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
+
 ProcessFields::ProcessFields(Engine_Interface_Base* eng_if) : Processing(eng_if)
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessFields::ProcessFields\r\n");
 	m_DumpType = E_FIELD_DUMP;
 	// vtk-file is default
 	m_fileType = VTK_FILETYPE;
@@ -126,6 +130,8 @@ bool ProcessFields::NeedPermeability() const
 
 void ProcessFields::InitProcess()
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessFields::InitProcess\r\n");
+
 	if (Enabled==false) return;
 
 	CalcMeshPos();
@@ -163,9 +169,13 @@ void ProcessFields::SetDumpMode(Engine_Interface_Base::InterpolationType mode)
 {
 	m_Eng_Interface->SetInterpolationType(mode);
 	if (mode==Engine_Interface_Base::CELL_INTERPOLATE)
+	{
 		m_dualMesh=true;
+	}
 	else if (mode==Engine_Interface_Base::NODE_INTERPOLATE)
+	{
 		m_dualMesh=false;
+	}
 	//else keep the preset/user defined case
 }
 

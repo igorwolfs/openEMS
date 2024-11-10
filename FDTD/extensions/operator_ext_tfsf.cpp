@@ -22,8 +22,12 @@
 #include "CSPrimBox.h"
 #include "CSPropExcitation.h"
 
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
+
 Operator_Ext_TFSF::Operator_Ext_TFSF(Operator* op) : Operator_Extension(op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator_Ext_TFSF::Operator_Ext_TFSF\r\n");
+
 	Init();
 }
 
@@ -32,6 +36,7 @@ Operator_Ext_TFSF::~Operator_Ext_TFSF()
 	Reset();
 }
 
+// Set excitation to 0
 void Operator_Ext_TFSF::Init()
 {
 	for (int n=0;n<3;++n)

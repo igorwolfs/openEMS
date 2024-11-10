@@ -19,8 +19,13 @@
 #include "operator_ext_excitation.h"
 #include "FDTD/engine_sse.h"
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
+
 Engine_Ext_Excitation::Engine_Ext_Excitation(Operator_Ext_Excitation* op_ext) : Engine_Extension(op_ext)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_Excitation::Engine_Ext_Excitation\r\n");
+
 	m_Op_Exc = op_ext;
 	m_Priority = ENG_EXT_PRIO_EXCITATION;
 }
@@ -30,15 +35,18 @@ Engine_Ext_Excitation::~Engine_Ext_Excitation()
 
 }
 
+// Called inside the engine.
 void Engine_Ext_Excitation::Apply2Voltages()
 {
 	//soft voltage excitation here (E-field excite)
 	int exc_pos;
 	unsigned int ny;
 	unsigned int pos[3];
+
 	int numTS = m_Eng->GetNumberOfTimesteps();
+	// m_Exc: type: Excitation
 	unsigned int length = m_Op_Exc->m_Exc->GetLength();
-	FDTD_FLOAT* exc_volt =  m_Op_Exc->m_Exc->GetVoltageSignal();
+	FDTD_FLOAT* exc_volt = m_Op_Exc->m_Exc->GetVoltageSignal();
 
 	int p = numTS+1;
 	if (m_Op_Exc->m_Exc->GetSignalPeriod()>0)
@@ -49,16 +57,20 @@ void Engine_Ext_Excitation::Apply2Voltages()
 	{
 	case Engine::BASIC:
 		{
+			// Iterate over all positions where the excitation function should be applied
 			for (unsigned int n=0; n<m_Op_Exc->Volt_Count; ++n)
 			{
+				// Calculate timestep position for voltage excitation taking into account total timesteps, delay, current timestep and periodicity.
 				exc_pos = numTS - (int)m_Op_Exc->Volt_delay[n];
 				exc_pos *= (exc_pos>0);
 				exc_pos %= p;
 				exc_pos *= (exc_pos<(int)length);
 				ny = m_Op_Exc->Volt_dir[n];
+				// Get x, y, z coordinates for excitation saved at excitation count index n
 				pos[0]=m_Op_Exc->Volt_index[0][n];
 				pos[1]=m_Op_Exc->Volt_index[1][n];
 				pos[2]=m_Op_Exc->Volt_index[2][n];
+				// Apply that excitation to the engine
 				m_Eng->Engine::SetVolt(ny,pos, m_Eng->Engine::GetVolt(ny,pos) + m_Op_Exc->Volt_amp[n]*exc_volt[exc_pos]);
 			}
 			break;

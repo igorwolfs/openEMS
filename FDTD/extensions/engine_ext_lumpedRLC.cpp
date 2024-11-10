@@ -21,8 +21,12 @@
 
 #include "FDTD/engine_sse.h"
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Engine_Ext_LumpedRLC::Engine_Ext_LumpedRLC(Operator_Ext_LumpedRLC* op_ext_RLC) : Engine_Extension(op_ext_RLC)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_LumpedRLC::Engine_Ext_LumpedRLC\r\n");
+
 	// Local pointer of the operator.
 	m_Op_Ext_RLC = op_ext_RLC;
 

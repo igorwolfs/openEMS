@@ -20,8 +20,10 @@
 #include "FDTD/engine_interface_fdtd.h"
 #include <iomanip>
 
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
 ProcessCurrent::ProcessCurrent(Engine_Interface_Base* eng_if) : ProcessIntegral(eng_if)
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessCurrent::ProcessCurrent\r\n");
 	m_SnapMethod=1;
 }
 

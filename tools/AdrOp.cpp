@@ -180,6 +180,13 @@ bool AdrOp::CheckRelativePos(int muiIrel,int muiJrel,int muiKrel, int muiLrel)
 	return bPosSet;
 }
 
+/**
+@brief: 
+@params: 
+	- muiIrel: x-coordinate
+	- muiJrel: y-coordinate
+	- muiKrel: z-coordinate
+*/
 unsigned int AdrOp::GetPos(int muiIrel, int muiJrel, int muiKrel, int /*muiLrel*/)
 {
 	if (bPosSet==false) error->Error(6);

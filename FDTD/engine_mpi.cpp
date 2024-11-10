@@ -181,6 +181,7 @@ void Engine_MPI::SendReceiveCurrents()
 	}
 }
 
+// FDTD 3D https://eecs.wsu.edu/~schneidj/ufdtd/chap9.pdf
 bool Engine_MPI::IterateTS(unsigned int iterTS)
 {
 	if (!m_Op_MPI->GetMPIEnabled())
@@ -190,13 +191,17 @@ bool Engine_MPI::IterateTS(unsigned int iterTS)
 
 	for (unsigned int iter=0; iter<iterTS; ++iter)
 	{
-		//voltage updates with extensions
+		//! ELECTRIC FIELD UPDATES
+		// voltage updates with extensions (excitations)
 		DoPreVoltageUpdates();
+		// propagate voltages into the grid
 		UpdateVoltages(0,numLines[0]);
+		// voltage updates with extensions (why after?)
 		DoPostVoltageUpdates();
+		// Apply extension voltage changes? (what's that)
 		Apply2Voltages();
 		SendReceiveVoltages();
-
+		//! MAGNETIC FIELD UPDATES
 		//current updates with extensions
 		DoPreCurrentUpdates();
 		UpdateCurrents(0,numLines[0]-1);

@@ -22,9 +22,12 @@
 #include "fparser.hh"
 
 using namespace std;
+extern log4cxx::LoggerPtr openEMS_logger;
 
 Operator_Ext_UPML::Operator_Ext_UPML(Operator* op) : Operator_Extension(op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator_Ext_UPML::Operator_Ext_UPML\r\n");
+
 	setlocale(LC_NUMERIC, "en_US.UTF-8");
 	m_GradingFunction = new FunctionParser();
 	//default grading function

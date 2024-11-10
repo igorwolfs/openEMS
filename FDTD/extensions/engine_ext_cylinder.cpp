@@ -19,9 +19,12 @@
 #include "engine_ext_cylinder.h"
 #include "operator_ext_cylinder.h"
 #include "FDTD/engine_sse.h"
+extern log4cxx::LoggerPtr openEMS_logger;
 
 Engine_Ext_Cylinder::Engine_Ext_Cylinder(Operator_Ext_Cylinder* op_ext) : Engine_Extension(op_ext)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_Cylinder::Engine_Ext_Cylinder\r\n");
+
 	cyl_Op = op_ext;
 	m_Eng_SSE = NULL;
 

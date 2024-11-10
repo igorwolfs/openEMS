@@ -24,8 +24,10 @@
 
 using namespace std;
 
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
 Processing::Processing(Engine_Interface_Base* eng_if)
 {
+	LOG4CXX_INFO(openEMS_logger, "Processing::Processing\r\n");
 	m_Eng_Interface = NULL;
 	SetEngineInterface(eng_if);
 
@@ -133,6 +135,7 @@ int Processing::GetNextInterval() const
 
 void Processing::AddStep(unsigned int step)
 {
+	LOG4CXX_INFO_FMT(openEMS_logger, "Processing::AddStep: {}\r\n", step);
 	if (m_ProcessSteps.size()==0)
 		m_ProcessSteps.push_back(step);
 	else if (find(m_ProcessSteps.begin(), m_ProcessSteps.end(),step)==m_ProcessSteps.end())

@@ -22,8 +22,12 @@
 
 #include "CSPropMaterial.h"
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Operator_Ext_Mur_ABC::Operator_Ext_Mur_ABC(Operator* op) : Operator_Extension(op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator_Ext_Mur_ABC::Operator_Ext_Mur_ABC\r\n");
+
 	Initialize();
 }
 

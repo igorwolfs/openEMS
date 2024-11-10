@@ -35,7 +35,6 @@ void Delete1DArray_v4sf(f4vector* array)
 	FREE( array );
 }
 
-
 void Delete3DArray_v4sf(f4vector*** array, const unsigned int* numLines)
 {
 	if (array==NULL) return;

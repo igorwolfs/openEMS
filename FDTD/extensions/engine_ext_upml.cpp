@@ -22,8 +22,12 @@
 #include "tools/array_ops.h"
 #include "tools/useful.h"
 
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
+
 Engine_Ext_UPML::Engine_Ext_UPML(Operator_Ext_UPML* op_ext) : Engine_Extension(op_ext)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_UPML::Engine_Ext_UPML");
+
 	m_Op_UPML = op_ext;
 
 	//this ABC extension should be executed first!

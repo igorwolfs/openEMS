@@ -23,8 +23,12 @@
 #include "CSPropLorentzMaterial.h"
 #include "CSPropDebyeMaterial.h"
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Operator_Ext_LorentzMaterial::Operator_Ext_LorentzMaterial(Operator* op) : Operator_Ext_Dispersive(op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator_Ext_LorentzMaterial::Operator_Ext_LorentzMaterial\r\n");
+
 	v_int_ADE = NULL;
 	v_ext_ADE = NULL;
 	i_int_ADE = NULL;

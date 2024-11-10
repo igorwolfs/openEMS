@@ -44,6 +44,7 @@ port.nr=portnr;
 V_Probe_Weight = 1;
 I_Probe_Weight = 1;
 
+% @param: n_dir is the direction of excitation
 if (dir(1)~=0) && (dir(2) == 0) && (dir(3)==0)
     n_dir = 1;
 elseif (dir(1)==0) && (dir(2) ~= 0) && (dir(3)==0)

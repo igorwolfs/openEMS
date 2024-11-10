@@ -21,9 +21,11 @@
 #include <iomanip>
 
 using namespace std;
+extern log4cxx::LoggerPtr openEMS_logger;
 
 ProcessIntegral::ProcessIntegral(Engine_Interface_Base* eng_if)  : Processing(eng_if)
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessIntegral::ProcessIntegral\r\n");
 	m_Results=NULL;
 	m_FD_Results=NULL;
 	m_normDir = -1;
@@ -40,6 +42,7 @@ ProcessIntegral::~ProcessIntegral()
 
 void ProcessIntegral::InitProcess()
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessIntegral::InitProcess\r\n");
 	delete[] m_Results; m_Results = NULL;
 	delete[] m_FD_Results; m_FD_Results = NULL;
 
@@ -78,6 +81,8 @@ void ProcessIntegral::InitProcess()
 			m_FD_Results[i].push_back(0);
 		}
 	}
+	LOG4CXX_INFO_FMT(openEMS_logger, "Number of integrals: {}\r\n", GetNumberOfIntegrals());
+
 }
 
 void ProcessIntegral::FlushData()

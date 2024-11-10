@@ -49,7 +49,7 @@ function [CSX,port] = AddStripLinePort( CSX, prio, portnr, materialname, start, 
 % See also InitCSX DefineRectGrid AddMetal AddMaterial AddExcitation calcPort
 
 %% validate arguments %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%check mesh
+% check mesh
 if ~isfield(CSX,'RectilinearGrid')
     error 'mesh needs to be defined! Use DefineRectGrid() first!';
 end
@@ -162,6 +162,7 @@ try
 	end
 	SL_w2 = interp1( mesh{idx_width}, 1:numel(mesh{idx_width}), (nstart(idx_width)+nstop(idx_width))/2, 'nearest' );
 	SL_w2 = mesh{idx_width}(SL_w2); % get e-line at center of stripline (SL_width/2)
+    % v1, v2, v3: Gets meshes along propagation index around the measure plane (x-1, x, x+1)
 	v1_start(idx_prop)   = meshlines(1);
 	v1_start(idx_width)  = SL_w2;
 	v1_start(idx_height) = start(idx_height);
@@ -184,6 +185,8 @@ height_vector(idx_height) = height;
 
 weight = 0.5;
 % create the voltage-probes
+% Creates probe on port place +- height (so the height of the probe box is 2*the height)
+% Does it for the respective x-1, x, x+1 for x the measuring index of the grid in propagation direction close to the measure plane.
 port.U_filename{1,1} = [PortNamePrefix 'port_ut' num2str(portnr) 'A1'];
 CSX = AddProbe( CSX, port.U_filename{1,1}, 0, 'weight', weight );
 CSX = AddBox( CSX, port.U_filename{1,1}, prio, v1_start, v1_stop+height_vector);
@@ -192,7 +195,6 @@ port.U_filename{1,2} = [PortNamePrefix 'port_ut' num2str(portnr) 'A2'];
 CSX = AddProbe( CSX, port.U_filename{1,2}, 0, 'weight', weight );
 CSX = AddBox( CSX, port.U_filename{1,2}, prio, v1_start, v1_stop-height_vector);
 
-
 port.U_filename{2,1} = [PortNamePrefix 'port_ut' num2str(portnr) 'B1'];
 CSX = AddProbe( CSX, port.U_filename{2,1}, 0, 'weight', weight );
 CSX = AddBox( CSX, port.U_filename{2,1}, prio, v2_start, v2_stop+height_vector );
@@ -200,7 +202,6 @@ CSX = AddBox( CSX, port.U_filename{2,1}, prio, v2_start, v2_stop+height_vector )
 port.U_filename{2,2} = [PortNamePrefix 'port_ut' num2str(portnr) 'B2'];
 CSX = AddProbe( CSX, port.U_filename{2,2}, 0, 'weight', weight );
 CSX = AddBox( CSX, port.U_filename{2,2}, prio, v2_start, v2_stop-height_vector );
-
 
 port.U_filename{3,1} = [PortNamePrefix 'port_ut' num2str(portnr) 'C1'];
 CSX = AddProbe( CSX, port.U_filename{3,1}, 0, 'weight', weight );
@@ -256,8 +257,10 @@ port.measplanepos = abs(v2_start(idx_prop) - start(idx_prop))*port.LengthScale;
 % create excitation (if enabled) and port resistance
 try
 	meshline = interp1( mesh{idx_prop}, 1:numel(mesh{idx_prop}), start(idx_prop) + feed_shift*direction, 'nearest' );
-	ex_start(idx_prop)   = mesh{idx_prop}(meshline) ;
+    % Just create the excitation as min(start, stop) -> max(start, stop) and add the feedshift for the excitation direction
+	ex_start(idx_prop)   = mesh{idx_prop}(meshline);
 	ex_start(idx_width)  = nstart(idx_width);
+    %! Note: the height here is simply 0
 	ex_start(idx_height) = nstart(idx_height);
 	ex_stop(idx_prop)    = ex_start(idx_prop);
 	ex_stop(idx_width)   = nstop(idx_width);
@@ -268,8 +271,10 @@ end
 
 port.excite = 0;
 if excite
+    % If excitation enabled: 
     port.excite = 1;
     CSX = AddExcitation( CSX, [PortNamePrefix 'port_excite_1_' num2str(portnr)], 0, evec, excite_args{:} );
+    % Excitation is created at ex_start -> ex_stop +- height_vector (and ex_stop = ex_start, so take them 0) -> So 2 * height becomes the height of your excitation vector.
     CSX = AddBox( CSX, [PortNamePrefix 'port_excite_1_' num2str(portnr)], prio, ex_start, ex_stop+height_vector );
     CSX = AddExcitation( CSX, [PortNamePrefix 'port_excite_2_' num2str(portnr)], 0, -evec, excite_args{:} );
     CSX = AddBox( CSX, [PortNamePrefix 'port_excite_2_' num2str(portnr)], prio, ex_start, ex_stop-height_vector );

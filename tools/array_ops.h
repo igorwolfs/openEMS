@@ -34,6 +34,7 @@
 #define F4VECTOR_SIZE 16 // sizeof(typeid(f4vector))
 
 #ifdef __GNUC__ // GCC
+// Single-instruction multiple data definition (instruction used to enable parallel processing)
 typedef float v4sf __attribute__ ((vector_size (F4VECTOR_SIZE))); // vector of four single floats
 union f4vector
 {
@@ -44,6 +45,7 @@ union f4vector
 #include <emmintrin.h>
 union f4vector
 {
+	// Automaitcally aligned on 16-byte (128-bit) register boundary
 	__m128 v;
 	float f[4];
 };
@@ -66,7 +68,7 @@ f4vector*** Create3DArray_v4sf(const unsigned int* numLines);
 f4vector**** Create_N_3DArray_v4sf(const unsigned int* numLines);
 
 // *************************************************************************************
-// templates
+// * templates *
 // *************************************************************************************
 template <typename T>
 T** Create2DArray(const unsigned int* numLines)

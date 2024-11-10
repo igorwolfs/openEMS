@@ -22,8 +22,12 @@
 
 #include "CSPropConductingSheet.h"
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 Operator_Ext_ConductingSheet::Operator_Ext_ConductingSheet(Operator* op, double f_max) : Operator_Ext_LorentzMaterial(op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator_Ext_ConductingSheet::Operator_Ext_ConductingSheet\r\n");
+
 	m_f_max = f_max;
 }
 

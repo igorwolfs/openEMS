@@ -20,9 +20,12 @@
 #include "tools/array_ops.h"
 
 using namespace std;
+extern log4cxx::LoggerPtr openEMS_logger;
 
 Operator_Ext_Dispersive::Operator_Ext_Dispersive(Operator* op) : Operator_Extension(op)
 {
+	LOG4CXX_INFO(openEMS_logger, "Operator_Ext_Dispersive::Operator_Ext_Dispersive\r\n");
+
 	m_curr_ADE_On = NULL;
 	m_volt_ADE_On = NULL;
 

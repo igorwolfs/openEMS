@@ -57,6 +57,7 @@
 
 using namespace std;
 
+
 double CalcDiffTime(timeval t1, timeval t2)
 {
 	double s_diff = t1.tv_sec - t2.tv_sec;
@@ -255,6 +256,8 @@ bool openEMS::parseCommandLineArgument( const char *argv )
 
 void openEMS::SetNumberOfThreads(int val)
 {
+	LOG4CXX_INFO(openEMS_logger, "openEMS::SetNumberOfThreads\r\n");
+
 	if ((val<0) || (val>boost::thread::hardware_concurrency()))
 		val = boost::thread::hardware_concurrency();
 	m_engine_numThreads = val;
@@ -308,7 +311,7 @@ void openEMS::WelcomeScreen()
 
 bool openEMS::SetupBoundaryConditions()
 {
-	LOG4CXX_INFO(openEMS_logger, "SETTING UP BC");
+	LOG4CXX_INFO(openEMS_logger, ">>> openEMS::SetupBoundaryConditions\r\n");
 
 	FDTD_Op->SetBoundaryCondition(m_BC_type); //operator only knows about PEC and PMC, everything else is defined by extensions (see below)
 
@@ -332,13 +335,13 @@ bool openEMS::SetupBoundaryConditions()
 
 	//create the upml
 	Operator_Ext_UPML::Create_UPML(FDTD_Op, m_BC_type, m_PML_size, string());
-
+	LOG4CXX_INFO(openEMS_logger, "<<< openEMS::SetupBoundaryConditions\r\n");
 	return true;
 }
 
 Engine_Interface_FDTD* openEMS::NewEngineInterface(int multigridlevel)
 {
-	LOG4CXX_INFO(openEMS_logger, "NewEngineInterface");
+	LOG4CXX_INFO(openEMS_logger, ">>> openEMS::NewEngineInterface\r\n");
 
 	Operator_CylinderMultiGrid* op_cyl_mg = dynamic_cast<Operator_CylinderMultiGrid*>(FDTD_Op);
 	while (op_cyl_mg && multigridlevel>0)
@@ -366,6 +369,8 @@ Engine_Interface_FDTD* openEMS::NewEngineInterface(int multigridlevel)
 	Operator_sse* op_sse = dynamic_cast<Operator_sse*>(FDTD_Op);
 	if (op_sse)
 		return new Engine_Interface_SSE_FDTD(op_sse);
+
+	LOG4CXX_INFO(openEMS_logger, "<<< openEMS::NewEngineInterface\r\n");
 	return new Engine_Interface_FDTD(FDTD_Op);
 }
 
@@ -432,6 +437,8 @@ bool openEMS::SetupProcessing()
 				}
 				else if (pb->GetProbeType()==1)
 				{
+					// If there is a current probe, create a ProcessCurrent-engine
+					// This engine creates an engine that has an integral-calculation function, 
 					ProcessCurrent* procCurr = new ProcessCurrent(NewEngineInterface());
 					proc=procCurr;
 				}
@@ -624,33 +631,46 @@ void openEMS::SetupCylinderMultiGrid(std::string val)
 
 bool openEMS::SetupOperator()
 {
+	LOG4CXX_INFO(openEMS_logger, ">>> Engine_Interface_FDTD created\r\n");
 	if (CylinderCoords)
 	{
 		if (m_CC_MultiGrid.size()>0)
 		{
+			LOG4CXX_INFO(openEMS_logger, "Operator_CylinderMultiGrid ");
 			FDTD_Op = Operator_CylinderMultiGrid::New(m_CC_MultiGrid, m_engine_numThreads);
 			if (FDTD_Op==NULL)
+			{
+				LOG4CXX_INFO(openEMS_logger, "Operator_Cylinder ");
 				FDTD_Op = Operator_Cylinder::New(m_engine_numThreads);
+			}
 		}
 		else
+		{
+			LOG4CXX_INFO(openEMS_logger, "Operator_Cylinder ");
 			FDTD_Op = Operator_Cylinder::New(m_engine_numThreads);
+		}
 	}
 	else if (m_engine == EngineType_SSE)
 	{
+		LOG4CXX_INFO(openEMS_logger, "Operator_sse ");
 		FDTD_Op = Operator_sse::New();
 	}
 	else if (m_engine == EngineType_SSE_Compressed)
 	{
+		LOG4CXX_INFO(openEMS_logger, "Operator_SSE_Compressed ");
 		FDTD_Op = Operator_SSE_Compressed::New();
 	}
 	else if (m_engine == EngineType_Multithreaded)
 	{
+		LOG4CXX_INFO(openEMS_logger, "Operator_Multithread ");
 		FDTD_Op = Operator_Multithread::New(m_engine_numThreads);
 	}
 	else
 	{
+		LOG4CXX_INFO(openEMS_logger, "Operator ");
 		FDTD_Op = Operator::New();
 	}
+	LOG4CXX_INFO(openEMS_logger, " Engine_Interface_FDTD created <<<\r\n");
 	return true;
 }
 
@@ -725,6 +745,8 @@ bool openEMS::ParseFDTDSetup(std::string file)
 	if (g_settings.GetVerboseLevel()>0)
 		cout << "Read Geometry..." << endl;
 	ContinuousStructure* csx = new ContinuousStructure();
+
+	// FDTD-setup is parsed from the XML.
 	string EC(csx->ReadFromXML(openEMSxml));
 	if (EC.empty()==false)
 		cerr << EC << endl;
@@ -920,6 +942,7 @@ void openEMS::SetCSX(ContinuousStructure* csx)
 
 int openEMS::SetupFDTD()
 {
+	LOG4CXX_INFO(openEMS_logger, "Setting up FDTD");
 	timeval startTime;
 	gettimeofday(&startTime,NULL);
 
@@ -980,6 +1003,8 @@ int openEMS::SetupFDTD()
 
 	FDTD_Op->SetExcitationSignal(m_Exc); //> simple setter
 	FDTD_Op->AddExtension(new Operator_Ext_Excitation(FDTD_Op)); //> External excitation added
+
+	//> Set voltage and current excitations to 0
 	if (!CylinderCoords)
 		FDTD_Op->AddExtension(new Operator_Ext_TFSF(FDTD_Op)); 
 
@@ -990,7 +1015,9 @@ int openEMS::SetupFDTD()
 	}
 
 	SetupBoundaryConditions();
-
+	//> CFL (courant number stability Courant<critical value)
+	//> Renning criterion 
+	LOG4CXX_INFO_FMT(openEMS_logger, "SetTimeStepMethod: {}", m_TS_method);
 	FDTD_Op->SetTimeStepMethod(m_TS_method);
 
 	if (m_TS>0)
@@ -1058,10 +1085,16 @@ int openEMS::SetupFDTD()
 	FDTD_Op->SetMaterialStoreFlags(2,false);
 	FDTD_Op->SetMaterialStoreFlags(3,false);
 
+	//? Q: where is m_maxTime set?
 	unsigned int maxTime_TS = (unsigned int)(m_maxTime/FDTD_Op->GetTimestep());
-	if ((m_maxTime>0) && (maxTime_TS<NrTS))
-		NrTS = maxTime_TS;
 
+	LOG4CXX_DEBUG_FMT(openEMS_logger, "m_maxTime {:.3f}, timestep: {:.3f}, NrTS: {}\r\n", m_maxTime, FDTD_Op->GetTimestep(), NrTS);
+	if ((m_maxTime>0) && (maxTime_TS<NrTS))
+	{
+		NrTS = maxTime_TS;
+	}
+
+	//> Excitation signal being built (sinusoidal, gaussian, step, custom)
 	if (!m_Exc->buildExcitationSignal(NrTS))
 		exit(2);
 
@@ -1078,6 +1111,8 @@ int openEMS::SetupFDTD()
 		FDTD_Op->ShowExtStat();
 		cout << "Creation time for operator: " << CalcDiffTime(OpDoneTime,startTime) << " s" << endl;
 	}
+
+	//> Number of cells is simply the number of gridlines multiplied with each other.
 	cout << "FDTD simulation size: " << FDTD_Op->GetNumberOfLines(0) << "x" << FDTD_Op->GetNumberOfLines(1) << "x" << FDTD_Op->GetNumberOfLines(2) << " --> "  << FDTD_Op->GetNumberCells() << " FDTD cells " << endl;
 	cout << "FDTD timestep is: " <<FDTD_Op->GetTimestep()  << " s; Nyquist rate: " <<  m_Exc->GetNyquistNum() << " timesteps @" << CalcNyquistFrequency(m_Exc->GetNyquistNum(),FDTD_Op->GetTimestep()) << " Hz" << endl;
 	if (m_Exc->GetNyquistNum()>1000)
@@ -1112,6 +1147,7 @@ int openEMS::SetupFDTD()
 	//create FDTD engine
 	FDTD_Eng = FDTD_Op->CreateEngine();
 
+	//> Operator-extension-steady state detection.
 	if (Op_Ext_SSD)
 	{
 		Eng_Ext_SSD = dynamic_cast<Engine_Ext_SteadyState*>(Op_Ext_SSD->GetEngineExtention());
@@ -1190,10 +1226,11 @@ void openEMS::RunFDTD()
 
 	//special handling of a field processing, needed to realize the end criteria...
 	ProcessFields* ProcField = new ProcessFields(NewEngineInterface());
+	//> PA: processing array
 	PA->AddProcessing(ProcField);
 	double maxE=0,currE=0;
 
-	//init processings
+	//init all processes (subthreads calculating openEMS) (PA: processing-class)
 	PA->InitAll();
 
 	//add all timesteps to end-crit field processing with max excite amplitude

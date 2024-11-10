@@ -18,9 +18,12 @@
 #include "engine_ext_dispersive.h"
 #include "operator_ext_dispersive.h"
 #include "FDTD/engine_sse.h"
+extern log4cxx::LoggerPtr openEMS_logger;
 
 Engine_Ext_Dispersive::Engine_Ext_Dispersive(Operator_Ext_Dispersive* op_ext_disp) : Engine_Extension(op_ext_disp)
 {
+	LOG4CXX_INFO(openEMS_logger, "Engine_Ext_Dispersive::Engine_Ext_Dispersive\r\n");
+
 	m_Op_Ext_Disp = op_ext_disp;
 	int order = m_Op_Ext_Disp->m_Order;
 	curr_ADE = new FDTD_FLOAT**[order];

@@ -22,8 +22,11 @@
 
 using namespace std;
 
+extern log4cxx::LoggerPtr openEMS_logger; // = log4cxx::Logger::getLogger("openEMS");
+
 ProcessModeMatch::ProcessModeMatch(Engine_Interface_Base* eng_if) : ProcessIntegral(eng_if)
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessModeMatch::ProcessModeMatch\r\n");
 	for (int n=0; n<2; ++n)
 	{
 		m_ModeParser[n] = new CSFunctionParser();
@@ -70,6 +73,8 @@ string ProcessModeMatch::GetProcessingName() const
 
 void ProcessModeMatch::InitProcess()
 {
+	LOG4CXX_INFO(openEMS_logger, "ProcessModeMatch::InitProcess\r\n");
+
 	if (!Enabled) return;
 
 	if (m_Eng_Interface==NULL)
@@ -78,6 +83,7 @@ void ProcessModeMatch::InitProcess()
 		Enabled=false;
 		return;
 	}
+
 	m_Eng_Interface->SetInterpolationType(Engine_Interface_Base::NODE_INTERPOLATE);
 
 	int Dump_Dim=0;
@@ -93,9 +99,13 @@ void ProcessModeMatch::InitProcess()
 
 		//exclude boundaries from mode-matching
 		if (start[n]==0)
+		{
 			++start[n];
+		}
 		if (stop[n]==Op->GetNumberOfLines(n)-1)
+		{
 			--stop[n];
+		}
 
 		if (stop[n]!=start[n])
 			++Dump_Dim;
@@ -144,6 +154,7 @@ void ProcessModeMatch::InitProcess()
 	discLine[m_ny] = Op->GetDiscLine(m_ny,pos[m_ny],dualMesh);
 	double norm = 0;
 	double area = 0;
+	// Iterate over lines
 	for (unsigned int posP = 0; posP<m_numLines[0]; ++posP)
 	{
 		pos[nP] = start[nP] + posP;
@@ -153,6 +164,7 @@ void ProcessModeMatch::InitProcess()
 			pos[nPP] = start[nPP] + posPP;
 			discLine[nPP] = Op->GetDiscLine(nPP,pos[nPP],dualMesh);
 
+			// Get geometric parameters for grid, store them in "var"-array
 			var[0] = discLine[0] * gridDelta; // x
 			var[1] = discLine[1] * gridDelta; // y
 			var[2] = discLine[2] * gridDelta; // z
