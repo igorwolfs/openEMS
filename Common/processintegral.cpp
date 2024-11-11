@@ -177,6 +177,8 @@ int ProcessIntegral::Process()
 
 double* ProcessIntegral::CalcMultipleIntegrals()
 {
+
 	m_Results[0] = CalcIntegral();
+	LOG4CXX_INFO_FMT(openEMS_logger, ", INTEGRAL RESULT: {:.7f}\r\n", m_Results[0]);
 	return m_Results;
 }

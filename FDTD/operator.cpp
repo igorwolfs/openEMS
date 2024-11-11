@@ -959,6 +959,8 @@ void Operator::SetExcitationSignal(Excitation* exc)
 	m_Exc=exc;
 }
 
+
+
 void Operator::Calc_ECOperatorPos(int n, unsigned int* pos)
 {
 	unsigned int i = MainOp->SetPos(pos[0],pos[1],pos[2]);
@@ -1580,7 +1582,7 @@ bool Operator::Calc_LumpedElements()
 
 		if (PLE==NULL)
 		{
-			LOG4CXX_DEBUG(openEMS_logger, "Calc_LumpedElements (ret: false???!) <<<\r\n");
+			LOG4CXX_DEBUG(openEMS_logger, "Calc_LumpedElements (ret: false!) <<<\r\n");
 			return false; //sanity check: this should never happen!
 		}
 

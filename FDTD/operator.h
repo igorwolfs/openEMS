@@ -307,7 +307,11 @@ protected:
 	virtual bool AverageMatCellCenter(int ny, const unsigned int* pos, double* EffMat, vector<CSPrimitives*> vPrims) const;
 	virtual bool AverageMatQuarterCell(int ny, const unsigned int* pos, double* EffMat, vector<CSPrimitives*> vPrims) const;
 
-	//! Calc operator at certain \a pos
+	/*!
+	  \param[in] n line direction 
+	  \param[in] pos node positions
+	  \brief Sets the coefficient for the electric or magnetic field calculations (e.g.:  (1 - (sigma * dt) / (2 * mu))), check engine.cpp
+	  */
 	virtual void Calc_ECOperatorPos(int n, unsigned int* pos);
 
 	//! Calculate and setup lumped elements
@@ -353,7 +357,7 @@ protected:
 
 	// engine/post-proc needs access
 public:
-	//EC operator [direction][x][y][z]
+	//EC operator [direction][x][y][z] -> Factors to be put before the electric and magnetic fields (courant number, etc..)
 	FDTD_FLOAT**** vv; //calc new voltage from old voltage
 	FDTD_FLOAT**** vi; //calc new voltage from old current
 	FDTD_FLOAT**** ii; //calc new current from old current

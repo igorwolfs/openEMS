@@ -19,6 +19,8 @@
 
 using namespace std;
 
+extern log4cxx::LoggerPtr openEMS_logger;
+
 ProcessFieldProbe::ProcessFieldProbe(Engine_Interface_Base* eng_if, int type) : ProcessIntegral(eng_if)
 {
 	SetFieldType(type);
@@ -76,6 +78,7 @@ void ProcessFieldProbe::SetFieldType(int type)
 
 double* ProcessFieldProbe::CalcMultipleIntegrals()
 {
+	LOG4CXX_INFO_FMT(openEMS_logger, "ProcessFieldProbe::CalcMultipleIntegrals ");
 	m_Eng_Interface->SetInterpolationType(Engine_Interface_Base::NO_INTERPOLATION);
 
 	switch (m_ModeFieldType)

@@ -83,9 +83,12 @@ void Processing::SetName(string val, int number)
 
 bool Processing::CheckTimestep()
 {
+	// Get number of timesteps (set depending on plugins or end condition)
 	unsigned int ts = m_Eng_Interface->GetNumberOfTimesteps();
+	// If the time step is too small or too large
 	if (ts<startTS || ts>stopTS)
 		return false;
+	// 
 	if (m_ProcessSteps.size()>m_PS_pos)
 	{
 		if (m_ProcessSteps.at(m_PS_pos)==ts)
@@ -94,8 +97,10 @@ bool Processing::CheckTimestep()
 			return true;
 		}
 	}
+	// Variable set to Nyquist / m_OverSampling: so if oversampling is active
 	if (ProcessInterval)
 	{
+		// Return true every time x n_subsampling
 		if (ts%ProcessInterval==0) return true;
 	}
 
@@ -327,6 +332,8 @@ void ProcessingArray::InitAll()
 
 void ProcessingArray::FlushNext()
 {
+	LOG4CXX_INFO_FMT(openEMS_logger, "ProcessingArray::FlushNext ");
+	LOG4CXX_INFO_FMT(openEMS_logger, "PROCESSING element: {}\r\n", ProcessArray.size());
 	for (size_t i=0; i<ProcessArray.size(); ++i)
 	{
 		ProcessArray.at(i)->FlushNext();

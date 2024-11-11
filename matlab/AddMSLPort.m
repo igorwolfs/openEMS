@@ -148,6 +148,20 @@ else
     measplanepos = start(idx_prop)+direction*measplanepos;
 end
 
+%{
+%! warning: interp1: multiple discontinuities at the same X value.
+
+% * FUNCTION: interp1(x, y, 'nearest')
+Interpolates inptu data determining the value "yi" at points "xi."
+-> "nearest": returns the nearest neighbour.
+
+@param: idx_prop -> direction of propagation according to matlab index (so 1: x, 2: y, 3: z)
+@param: measplanepos -> The measure plane shift
+@param: mesh{idx_prop} -> Gets the entire mesh for that direction (in our case for the propagation index)
+% * POSSIBLE PROBLEMS
+-> The measure plane shift (could be beyond the actual PEC)
+%}
+printf("Measure Plane %.2f, x: []", measplanepos)
 % calculate position of the voltage probes
 try
 	mesh{1} = sort(CSX.RectilinearGrid.XLines);
@@ -158,8 +172,10 @@ try
 	if direction == -1
 		meshlines = fliplr(meshlines);
 	end
+    %! ERROR HAPPENS DURING INTERPOLATE
 	MSL_w2 = interp1( mesh{idx_width}, 1:numel(mesh{idx_width}), (nstart(idx_width)+nstop(idx_width))/2, 'nearest' );
-	MSL_w2 = mesh{idx_width}(MSL_w2); % get e-line at center of MSL (MSL_width/2)
+	%! ERROR HAPPENS DURING INTERPOLATE
+    MSL_w2 = mesh{idx_width}(MSL_w2); % get e-line at center of MSL (MSL_width/2)
 	v1_start(idx_prop)   = meshlines(1);
 	v1_start(idx_width)  = MSL_w2;
 	v1_start(idx_height) = start(idx_height);
@@ -179,15 +195,25 @@ end
 
 % calculate position of the current probes
 try
+    %! ERROR HAPPENS DURING INTERPOLATE
 	idx = interp1( mesh{idx_width}, 1:numel(mesh{idx_width}), nstart(idx_width), 'nearest' );
-	i1_start(idx_width)  = mesh{idx_width}(idx) - diff(mesh{idx_width}(idx-1:idx))/2;
-	idx = interp1( mesh{idx_height}, 1:numel(mesh{idx_height}), start(idx_height), 'nearest' );
+    %! ERROR HAPPENS DURING INTERPOLATE
+    
+    i1_start(idx_width)  = mesh{idx_width}(idx) - diff(mesh{idx_width}(idx-1:idx))/2;
+
+    %! ERROR HAPPENS DURING INTERPOLATE
+    idx = interp1( mesh{idx_height}, 1:numel(mesh{idx_height}), start(idx_height), 'nearest' );
+    %! ERROR HAPPENS DURING INTERPOLATE
 	i1_start(idx_height) = mesh{idx_height}(idx-1) - diff(mesh{idx_height}(idx-2:idx-1))/2;
 	i1_stop(idx_height)  = mesh{idx_height}(idx+1) + diff(mesh{idx_height}(idx+1:idx+2))/2;
 	i1_start(idx_prop)   = sum(meshlines(1:2))/2;
 	i1_stop(idx_prop)    = i1_start(idx_prop);
+
+    %! ERROR HAPPENS DURING INTERPOLATE
 	idx = interp1( mesh{idx_width}, 1:numel(mesh{idx_width}), nstop(idx_width), 'nearest' );
-	i1_stop(idx_width)   = mesh{idx_width}(idx) + diff(mesh{idx_width}(idx:idx+1))/2;
+    %! ERROR HAPPENS DURING INTERPOLATE
+
+    i1_stop(idx_width)   = mesh{idx_width}(idx) + diff(mesh{idx_width}(idx:idx+1))/2;
 	i2_start = i1_start;
 	i2_stop  = i1_stop;
 	i2_start(idx_prop)   = sum(meshlines(2:3))/2;

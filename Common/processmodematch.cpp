@@ -236,6 +236,8 @@ void ProcessModeMatch::SetFieldType(int type)
 
 double* ProcessModeMatch::CalcMultipleIntegrals()
 {
+	LOG4CXX_INFO_FMT(openEMS_logger, "ProcessModeMatch::CalcMultipleIntegrals ");
+
 	double value = 0;
 	double field = 0;
 	double purity = 0;

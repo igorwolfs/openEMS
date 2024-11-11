@@ -202,6 +202,8 @@ double* Engine_Interface_FDTD::GetRawInterpolatedDualField(const unsigned int* p
 
 double Engine_Interface_FDTD::CalcVoltageIntegral(const unsigned int* start, const unsigned int* stop) const
 {
+	LOG4CXX_INFO_FMT(openEMS_logger, " start [{} -> {}], [{} -> {}] [{} -> {}]", start[0], stop[0], start[1], stop[1], start[2], stop[2]);
+
 	if (((start[0]!=stop[0]) + (start[1]!=stop[1]) + (start[2]!=stop[2]))!=1)
 	{
 		cerr << "Engine_Interface_FDTD::CalcVoltageIntegral: Error, only a 1D/line integration is allowed" << endl;
@@ -211,9 +213,11 @@ double Engine_Interface_FDTD::CalcVoltageIntegral(const unsigned int* start, con
 	double result=0;
 	for (int n=0; n<3; ++n)
 	{
+		// Iterate over every point in the grid for direction n between start and stop
 		if (start[n]<stop[n])
 		{
 			unsigned int pos[3]={start[0],start[1],start[2]};
+			// Get every coordinate with respect to that grid and add it to the result
 			for (; pos[n]<stop[n]; ++pos[n])
 				result += m_Eng->GetVolt(n,pos[0],pos[1],pos[2]);
 		}
@@ -293,31 +297,41 @@ double Engine_Interface_FDTD::GetRawField(unsigned int n, const unsigned int* po
 
 double Engine_Interface_FDTD::CalcFastEnergy() const
 {
+	LOG4CXX_INFO_FMT(openEMS_logger, "Engine_Interface_FDTD::CalcFastEnergy\r\n");
 	double E_energy=0.0;
 	double H_energy=0.0;
 
 	unsigned int pos[3];
 	if (m_Eng->GetType()==Engine::BASIC)
 	{
+		//? Q: So the energy here is calculated over all the gridlines?
+		//? Q: So it is not in fact normalized over the amount of gridlines? What does this number even signify in that case?
+		LOG4CXX_INFO(openEMS_logger, "Engine type: Basic\r\n");
+		LOG4CXX_INFO_FMT(openEMS_logger, "NumberOfLines {}, {}, {}", m_Op->GetNumberOfLines(0), m_Op->GetNumberOfLines(1), m_Op->GetNumberOfLines(2));
 		for (pos[0]=0; pos[0]<m_Op->GetNumberOfLines(0)-1; ++pos[0])
 		{
 			for (pos[1]=0; pos[1]<m_Op->GetNumberOfLines(1)-1; ++pos[1])
 			{
 				for (pos[2]=0; pos[2]<m_Op->GetNumberOfLines(2)-1; ++pos[2])
 				{
+					// Gets electric field ** 2
 					E_energy+=m_Eng->Engine::GetVolt(0,pos[0],pos[1],pos[2]) * m_Eng->Engine::GetVolt(0,pos[0],pos[1],pos[2]);
 					E_energy+=m_Eng->Engine::GetVolt(1,pos[0],pos[1],pos[2]) * m_Eng->Engine::GetVolt(1,pos[0],pos[1],pos[2]);
 					E_energy+=m_Eng->Engine::GetVolt(2,pos[0],pos[1],pos[2]) * m_Eng->Engine::GetVolt(2,pos[0],pos[1],pos[2]);
 
+					// Gets magnetic field ** 2
 					H_energy+=m_Eng->Engine::GetCurr(0,pos[0],pos[1],pos[2]) * m_Eng->Engine::GetCurr(0,pos[0],pos[1],pos[2]);
 					H_energy+=m_Eng->Engine::GetCurr(1,pos[0],pos[1],pos[2]) * m_Eng->Engine::GetCurr(1,pos[0],pos[1],pos[2]);
 					H_energy+=m_Eng->Engine::GetCurr(2,pos[0],pos[1],pos[2]) * m_Eng->Engine::GetCurr(2,pos[0],pos[1],pos[2]);
 				}
 			}
+			LOG4CXX_INFO_FMT(openEMS_logger, "[pos0:{}], E: {.6f}, H: {.6f}, ", pos[0], E_energy, H_energy);
 		}
 	}
 	else
 	{
+		LOG4CXX_INFO(openEMS_logger, "Engine type: Other\r\n");
+		LOG4CXX_INFO_FMT(openEMS_logger, "NumberOfLines {}, {}, {}", m_Op->GetNumberOfLines(0), m_Op->GetNumberOfLines(1), m_Op->GetNumberOfLines(2));
 		for (pos[0]=0; pos[0]<m_Op->GetNumberOfLines(0)-1; ++pos[0])
 		{
 			for (pos[1]=0; pos[1]<m_Op->GetNumberOfLines(1)-1; ++pos[1])
@@ -333,7 +347,9 @@ double Engine_Interface_FDTD::CalcFastEnergy() const
 					H_energy+=m_Eng->GetCurr(2,pos[0],pos[1],pos[2]) * m_Eng->GetCurr(2,pos[0],pos[1],pos[2]);
 				}
 			}
+			LOG4CXX_INFO_FMT(openEMS_logger, "[pos0:{}], E: {.6f}, H: {.6f}, ", pos[0], E_energy, H_energy);
 		}
 	}
+	LOG4CXX_INFO_FMT(openEMS_logger, "E_energy: {:.3f}, H_energy: {:.3f}", E_energy, H_energy);
 	return __EPS0__*E_energy + __MUE0__*H_energy;
 }

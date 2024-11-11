@@ -45,6 +45,7 @@ void ProcessVoltage::DefineStartStopCoord(double* dstart, double* dstop)
 
 double ProcessVoltage::CalcIntegral()
 {
+	LOG4CXX_INFO_FMT(openEMS_logger, "ProcessVoltage::CalcIntegral");
 	//integrate voltages from start to stop on a line
 	return m_Eng_Interface->CalcVoltageIntegral(start,stop);
 }

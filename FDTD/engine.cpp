@@ -275,11 +275,10 @@ void Engine::Apply2Current()
 // FDTD 3D https://eecs.wsu.edu/~schneidj/ufdtd/chap9.pdf
 bool Engine::IterateTS(unsigned int iterTS)
 {
-	LOG4CXX_DEBUG(openEMS_logger, "Engine::IterateTS");
+	LOG4CXX_DEBUG(openEMS_logger, "Engine::IterateTS\r\n");
 	for (unsigned int iter=0; iter<iterTS; ++iter)
 	{
 		//! ELECTRIC FIELD UPDATES
-
 		//voltage updates with extensions
 		// voltage updates with extensions
 		DoPreVoltageUpdates();

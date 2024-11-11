@@ -94,6 +94,9 @@ void ProcessCurrent::DefineStartStopCoord(double* dstart, double* dstop)
 
 double ProcessCurrent::CalcIntegral()
 {
+	LOG4CXX_INFO_FMT(openEMS_logger, "ProcessCurrent::CalcIntegral ");
+	LOG4CXX_INFO_FMT(openEMS_logger, "start [{}, {}], [{}. {}] [{}, {}]", start[0], stop[0], start[1], stop[1], start[2], stop[2]);
+	LOG4CXX_INFO_FMT(openEMS_logger, ", inside: [{}, {}], [{}, {}] [{}, {}] ", m_start_inside[0], m_stop_inside[0], m_start_inside[1], m_stop_inside[1], m_start_inside[2], m_stop_inside[2]);
 	FDTD_FLOAT current=0;
 
 	Engine_Interface_FDTD* EI_FDTD = dynamic_cast<Engine_Interface_FDTD*>(m_Eng_Interface);
@@ -102,10 +105,10 @@ double ProcessCurrent::CalcIntegral()
 	{
 		const Engine* Eng = EI_FDTD->GetFDTDEngine();
 
-
 		switch (m_normDir)
 		{
 		case 0:
+			LOG4CXX_INFO_FMT(openEMS_logger, ", normal: X ");
 			//y-current
 			if (m_stop_inside[0] && m_start_inside[2])
 				for (unsigned int i=start[1]+1; i<=stop[1]; ++i)
@@ -124,6 +127,7 @@ double ProcessCurrent::CalcIntegral()
 					current-=Eng->GetCurr(2,start[0],start[1],i);
 			break;
 		case 1:
+			LOG4CXX_INFO_FMT(openEMS_logger, ", normal: Y ");
 			//z-current
 			if (m_start_inside[0] && m_start_inside[1])
 				for (unsigned int i=start[2]+1; i<=stop[2]; ++i)
@@ -142,6 +146,7 @@ double ProcessCurrent::CalcIntegral()
 					current-=Eng->GetCurr(0,i,start[1],start[2]);
 			break;
 		case 2:
+			LOG4CXX_INFO_FMT(openEMS_logger, ", normal: Z ");
 			//x-current
 			if (m_start_inside[1] && m_start_inside[2])
 				for (unsigned int i=start[0]+1; i<=stop[0]; ++i)

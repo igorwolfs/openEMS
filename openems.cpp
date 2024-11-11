@@ -1258,19 +1258,27 @@ void openEMS::RunFDTD()
 	PA->PreProcess();
 	int step=PA->Process();
 	if ((step<0) || (step>(int)NrTS)) step=NrTS;
+
+	LOG4CXX_INFO_FMT(openEMS_logger, "INITIALIZE ITERATIONS: {}\r\n", step);
+	
+	//? Q: how do we know the time between simulations?
 	while ((FDTD_Eng->GetNumberOfTimesteps()<NrTS) && (change>endCrit) && !CheckAbortCond())
 	{
+		LOG4CXX_INFO(openEMS_logger, "\r\n>>>>>>>>>>>>>>>>>>>>>>>>>>>> NEW ITERATION >>>>>>>>>>>>>>>>>>>>>>>>>>>\r\n");
+		LOG4CXX_INFO_FMT(openEMS_logger, "TIMESTEP {}\r\n", currTS);
+		
 		FDTD_Eng->IterateTS(step);
 		step=PA->Process();
+
 
 		if ((Eng_Ext_SSD==NULL) && ProcField->CheckTimestep())
 		{
 			currE = ProcField->CalcTotalEnergyEstimate();
 			if (currE>maxE)
 				maxE=currE;
+			LOG4CXX_INFO_FMT(openEMS_logger, "CalcTotalEnergyEstimate: Current {:.4f}, Max {:.4f}\r\n", currE, maxE);
 		}
 
-//		cout << " do " << step << " steps; current: " << eng.GetNumberOfTimesteps() << endl;
 		currTS = FDTD_Eng->GetNumberOfTimesteps();
 		if ((step<0) || (step>(int)(NrTS - currTS))) step=NrTS - currTS;
 
@@ -1281,9 +1289,11 @@ void openEMS::RunFDTD()
 		if (t_diff>4)
 		{
 			t_run = CalcDiffTime(currTime,startTime);
-			speed = numCells*(currTS-prevTS)/t_diff;
+			speed = numCells*(currTS-prevTS)/t_diff;			
 			cout << "[@" <<  FormatTime(t_run) <<  "] Timestep: " << setw(12)  << currTS ;
 			cout << " || Speed: " << setw(6) << setprecision(1) << std::fixed << speed*1e-6 << " MC/s (" <<  setw(4) << setprecision(3) << std::scientific << t_diff/(currTS-prevTS) << " s/TS)" ;
+
+			// Gets total energy, SO: if this becomes too high the energy just becomes infinite somehow?
 			if (Eng_Ext_SSD==NULL)
 			{
 				currE = ProcField->CalcTotalEnergyEstimate();
@@ -1292,10 +1302,14 @@ void openEMS::RunFDTD()
 				if (maxE)
 					change = currE/maxE;
 				cout << " || Energy: ~" << setw(6) << setprecision(2) << std::scientific << currE << " (-" << setw(5)  << setprecision(2) << std::fixed << fabs(10.0*log10(change)) << "dB)" << endl;
+				LOG4CXX_INFO_FMT(openEMS_logger, "NO_SS: Energy {:.6f} | {:.6f} dB\r\n", currE, fabs(10.0*log10(change)));
+
 			}
 			else
 			{
 				change = Eng_Ext_SSD->GetLastDiff();
+				LOG4CXX_INFO_FMT(openEMS_logger, "SS_ANALYSIS: Energy {:.6f} | {:.6f} dB\r\n", currE, fabs(10.0*log10(change)));
+
 				cout << " || SteadyState: " << setw(6) << setprecision(2) << std::fixed << 10.0*log10(change) << " dB" << endl;
 			}
 			prevTime=currTime;
