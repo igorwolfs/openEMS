@@ -217,7 +217,7 @@ double Engine_Interface_FDTD::CalcVoltageIntegral(const unsigned int* start, con
 		if (start[n]<stop[n])
 		{
 			unsigned int pos[3]={start[0],start[1],start[2]};
-			// Get every coordinate with respect to that grid and add it to the result
+			// Get every coordinate with respect to that grid and add it to the result -> this is basically the integral of the electric field over a line multiplied by the distance = VOLTAGE
 			for (; pos[n]<stop[n]; ++pos[n])
 				result += m_Eng->GetVolt(n,pos[0],pos[1],pos[2]);
 		}

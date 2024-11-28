@@ -128,6 +128,10 @@ void Engine::UpdateVoltages(unsigned int startX, unsigned int numX)
 					Op->vv: operator (1 - (sigma * dt) / (2 * mu)) / (1 + (sigma * dt) / (2 * mu))
 					Op->vi: operator (1 / (1 + (sigma * dt) / (2 * mu))
 
+					Calculate electric fields based on magnetic field change
+					divergence of E = curl of H * a factor 
+					dEx_t1 = k1 * dEx_t0 + k2 * ((Hz(x0, y0, z0) - Hz(x0, y1, z0)) - (Hy(x0, y0, z0) - Hy(x0, y0, z1))
+
 					curr[Orientation of the applied magnetic field component (0, 1, 2)][Cell coordinate x][cell coordinate y][cell coordinate z]
 					volt[Orientation of the electric field component (0, 1, 2)][Cell coordinate x][cell coordinate y][cell coordinate z]
 				 */
@@ -184,6 +188,13 @@ void Engine::UpdateCurrents(unsigned int startX, unsigned int numX)
 		{
 			for (pos[2]=0; pos[2]<numLines[2]-1; ++pos[2])
 			{
+				
+				'''
+				Calculate electric fields based on magnetic field change
+				divergence of H = curl of E * a factor 
+				dHx_t1 = k1 * dHx_t0 + k2 * (Ez(x0, y0, z0) - Ez(x0, y1, z0) - (Ey(x0, y0, z0) - Ey(x0, y0, z1))
+				'''
+				
 				// do the updates here
 				// for x
 				curr[0][pos[0]][pos[1]][pos[2]] *=
